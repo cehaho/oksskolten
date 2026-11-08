@@ -67,7 +67,7 @@ Parce qu'Oksskolten dispose toujours du texte complet, les résumés et traducti
 - **Recherche plein texte** — Recherche propulsée par Meilisearch sur l'intégralité de vos archives
 - **Récupération intelligente** — Planification adaptative par flux, requêtes HTTP conditionnelles (ETag/Last-Modified), déduplication par empreinte du contenu, backoff exponentiel et suppression des paramètres de tracking
 - **PWA** — Lecture hors ligne, synchronisation en arrière-plan, installation sur l'écran d'accueil
-- **Authentification multiple** — Mot de passe, Passkey (WebAuthn) et OAuth GitHub, chacun configurable indépendamment
+- **Authentification multiple** — Mot de passe, Passkey (WebAuthn), OAuth GitHub et OpenID Connect (Pocket ID, Authelia, Authentik…), chacun configurable indépendamment
 - **Gestion de flux intelligente** — Découverte automatique, flux par sélecteur CSS (via RSS Bridge), contournement anti-bot (FlareSolverr) et désactivation automatique des flux morts
 - **Clipping d'articles** — Enregistrer n'importe quelle URL comme article, avec extraction complète du contenu
 - **Thèmes** — 14 thèmes de couleurs intégrés, import de thèmes personnalisés en JSON, 9 polices d'article, 8 styles de coloration syntaxique
@@ -141,7 +141,7 @@ Les variables d'environnement propres au fork (Reddit, Bluesky, vLLM) sont docum
 | Base de données | [SQLite](https://sqlite.org/) via [libsql](https://github.com/tursodatabase/libsql) (mode WAL) |
 | IA | [Anthropic](https://docs.anthropic.com/) / [Gemini](https://ai.google.dev/) / [OpenAI](https://platform.openai.com/) |
 | Recherche | [Meilisearch](https://www.meilisearch.com/) |
-| Authentification | JWT + [Passkey / WebAuthn](https://webauthn.io/) + OAuth GitHub |
+| Authentification | JWT + [Passkey / WebAuthn](https://webauthn.io/) + OAuth GitHub + OpenID Connect |
 | Déploiement | Docker Compose + [Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/) |
 
 ## Architecture
@@ -225,7 +225,7 @@ Le récupérateur de flux limite la bande passante et s'adapte au comportement d
 | **Base de données** | SQLite (embarquée, WAL) | PostgreSQL (externe) | MySQL/PG/SQLite | SaaS |
 | **Déploiement** | Conteneur unique | Binaire + PostgreSQL | PHP + serveur web + BDD | SaaS |
 | **Lecture hors ligne** | PWA avec synchro en arrière-plan | — | — | Applis mobiles uniquement |
-| **Authentification** | Mot de passe + Passkey/WebAuthn + OAuth GitHub | Mot de passe + clé API | Mot de passe + clé API | Google/Apple/social + SAML (Entreprise) |
+| **Authentification** | Mot de passe + Passkey/WebAuthn + OAuth GitHub + OIDC | Mot de passe + clé API | Mot de passe + clé API | Google/Apple/social + SAML (Entreprise) |
 | **Thèmes** | 14 + import JSON personnalisé | Clair/Sombre | ~10 thèmes | — |
 | **Langage** | Node.js (TypeScript) | Go | PHP | — |
 | **Prix** | Gratuit / open source (AGPL-3.0) | Gratuit / open source (Apache-2.0) | Gratuit / open source (AGPL-3.0) | 12,99 $/mois (Pro+) |

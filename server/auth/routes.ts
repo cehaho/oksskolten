@@ -5,7 +5,7 @@ import { getDb, getSetting } from '../db.js'
 
 const BCRYPT_ROUNDS = process.env.NODE_ENV === 'test' ? 4 : 12
 import { requireAuth, requireJson } from './guards.js'
-import { isGitHubOAuthEnabled } from './oauth-routes.js'
+import { hasOtherLoginMethod } from './sso.js'
 import { parseOrBadRequest } from '../lib/validation.js'
 
 const LoginBody = z.object({
@@ -137,9 +137,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       }
     } else {
       // Reset mode: require alternative auth method
-      const passkeyCount = (db.prepare('SELECT COUNT(*) AS cnt FROM credentials').get() as { cnt: number }).cnt
-      const githubEnabled = isGitHubOAuthEnabled()
-      if (passkeyCount === 0 && !githubEnabled) {
+      if (!hasOtherLoginMethod('password')) {
         return reply.status(400).send({ error: 'Current password is required' })
       }
     }

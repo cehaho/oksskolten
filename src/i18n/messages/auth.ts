@@ -27,6 +27,9 @@ export const auth = {
   'login.passkeyError': { ja: 'パスキー認証に失敗しました', en: 'Passkey authentication failed', zh: '通行密钥认证失败'},
   'login.github': { ja: 'GitHubでログイン', en: 'Sign in with GitHub', zh: '使用 GitHub 登录'},
   'login.githubError': { ja: 'GitHub認証に失敗しました', en: 'GitHub authentication failed', zh: 'GitHub 认证失败'},
+  'login.oidc': { ja: '${name}でログイン', en: 'Sign in with ${name}', zh: '使用 ${name} 登录'},
+  'login.oidcError': { ja: '${name}認証に失敗しました', en: '${name} authentication failed', zh: '${name} 认证失败'},
+  'login.ssoError': { ja: '外部認証に失敗しました', en: 'External sign-in failed', zh: '外部登录失败'},
 
   // Password strength
   'password.tooShort': { ja: '8文字以上必要です', en: 'At least 8 characters required', zh: '至少需要 8 个字符'},

@@ -442,6 +442,28 @@ export const settings = {
   'settings.githubSaved': { ja: 'GitHub OAuth設定を保存しました', en: 'GitHub OAuth settings saved', zh: 'GitHub OAuth 设置已保存'},
   'settings.githubNotConfigured': { ja: 'Client IDとClient Secretを設定してください', en: 'Set Client ID and Client Secret first', zh: '请先设置 Client ID 和 Client Secret'},
   'settings.cannotDisableGithub': { ja: '他のログイン方法が有効でないため無効にできません', en: 'Cannot disable without an alternative login method', zh: '没有其他登录方式时无法禁用'},
+
+  // Settings — OpenID Connect (Pocket ID, Authelia, ...)
+  'settings.oidc': { ja: 'OpenID Connect', en: 'OpenID Connect', zh: 'OpenID Connect'},
+  'settings.oidcDesc': {
+    ja: 'Pocket ID、Authelia、Authentik などの OIDC プロバイダーによるログインを許可',
+    en: 'Allow login through an OIDC provider such as Pocket ID, Authelia or Authentik',
+    zh: '允许通过 Pocket ID、Authelia、Authentik 等 OIDC 提供商登录'
+  },
+  'settings.oidcIssuer': { ja: 'Issuer URL', en: 'Issuer URL', zh: 'Issuer URL'},
+  'settings.oidcClientSecretDesc': { ja: 'Client Secret（パブリッククライアントの場合は空欄）', en: 'Client Secret (leave empty for a public client)', zh: 'Client Secret（公共客户端留空）'},
+  'settings.oidcDisplayName': { ja: 'ボタンの表示名', en: 'Button label', zh: '按钮名称'},
+  'settings.oidcAllowedUsersDesc': {
+    ja: 'ログインを許可するユーザーのメールアドレス、ユーザー名、または sub をカンマ区切りで入力してください（必須）。',
+    en: 'Emails, usernames or subject IDs allowed to log in, separated by commas (required).',
+    zh: '允许登录的邮箱、用户名或 sub，用逗号分隔（必填）。'
+  },
+  'settings.oidcAllowedUsersPlaceholder': { ja: 'you@example.com', en: 'you@example.com', zh: 'you@example.com'},
+  'settings.oidcGuideStep1': { ja: 'OIDC プロバイダーで新しいクライアントを作成', en: 'Create a new client in your OIDC provider (Pocket ID: OIDC Clients → Add OIDC Client)', zh: '在 OIDC 提供商中创建新客户端'},
+  'settings.oidcGuideStep2': { ja: 'Callback URL に次の値を設定:', en: 'Set the callback URL to:', zh: '将回调 URL 设置为：'},
+  'settings.oidcGuideStep3': { ja: 'Issuer URL、Client ID、Client Secret を下のフォームに貼り付けて保存', en: 'Paste the issuer URL, Client ID and Client Secret below, and save', zh: '将 Issuer URL、Client ID 和 Client Secret 粘贴到下方并保存'},
+  'settings.oidcSaved': { ja: 'OIDC設定を保存しました', en: 'OIDC settings saved', zh: 'OIDC 设置已保存'},
+  'settings.oidcNotConfigured': { ja: 'Issuer URL、Client ID、許可ユーザーを設定してください', en: 'Set the issuer URL, Client ID and allowed users first', zh: '请先设置 Issuer URL、Client ID 和允许的用户'},
   'provider.anthropic': { ja: 'Anthropic API', en: 'Anthropic API', zh: 'Anthropic API'},
   'provider.gemini': { ja: 'Gemini API', en: 'Gemini API', zh: 'Gemini API'},
   'provider.openai': { ja: 'OpenAI API', en: 'OpenAI API', zh: 'OpenAI API'},

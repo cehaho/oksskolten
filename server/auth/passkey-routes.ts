@@ -10,7 +10,8 @@ import type { AuthenticatorTransportFuture, RegistrationResponseJSON, Authentica
 import { z } from 'zod'
 import { getDb, getSetting, upsertSetting } from '../db.js'
 import { requireAuth, getOrigin, getRpID, getCredentialCount } from './guards.js'
-import { isGitHubOAuthEnabled } from './oauth-routes.js'
+import { hasOtherLoginMethod, isGitHubOAuthEnabled, isOidcEnabled } from './sso.js'
+import { getOidcDisplayName } from './oidc-routes.js'
 import { TtlStore } from '../lib/ttl-store.js'
 import { NumericIdParams, parseOrBadRequest } from '../lib/validation.js'
 import aaguidData from './aaguids.json' with { type: 'json' }
@@ -98,6 +99,7 @@ export async function passkeyRoutes(app: FastifyInstance): Promise<void> {
       password: { enabled: passwordEnabled },
       passkey: { enabled: passkeyCount > 0, count: passkeyCount },
       github: { enabled: githubEnabled },
+      oidc: { enabled: isOidcEnabled(), name: getOidcDisplayName() },
     })
   })
 
@@ -270,11 +272,7 @@ export async function passkeyRoutes(app: FastifyInstance): Promise<void> {
     const numId = params.id
 
     // Lockout prevention: don't delete the last passkey if no other auth method is enabled
-    const passwordEnabled = getSetting('auth.password_enabled') !== '0'
-    const passkeyCount = getCredentialCount()
-    const githubEnabled = isGitHubOAuthEnabled()
-
-    if (!passwordEnabled && !githubEnabled && passkeyCount <= 1) {
+    if (getCredentialCount() <= 1 && !hasOtherLoginMethod('passkey')) {
       return reply.status(400).send({
         error: 'Cannot delete the last passkey without an alternative login method',
       })
@@ -297,9 +295,7 @@ export async function passkeyRoutes(app: FastifyInstance): Promise<void> {
 
     if (!wantEnabled) {
       // Cannot disable password if no other auth method is available
-      const passkeyCount = getCredentialCount()
-      const githubEnabled = isGitHubOAuthEnabled()
-      if (passkeyCount === 0 && !githubEnabled) {
+      if (!hasOtherLoginMethod('password')) {
         return reply.status(400).send({
           error: 'Cannot disable password authentication without an alternative login method',
         })

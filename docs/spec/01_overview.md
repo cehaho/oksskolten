@@ -42,7 +42,7 @@ Typical RSS readers only display the title and summary provided by the feed, req
 | Language Detection | Local processing (CJK character ratio, no API needed) |
 | Summarization | Selectable from Anthropic / Gemini / OpenAI. Default: Anthropic Haiku (`claude-haiku-4-5-20251001`). On-demand, streaming-capable |
 | Translation | Selectable from Anthropic / Gemini / OpenAI / Google Translate / DeepL. Default: Anthropic Sonnet (`claude-sonnet-4-6`). Non-ja articles only. On-demand, streaming-capable |
-| Authentication | JWT (`@fastify/jwt`) + bcryptjs (password auth) + WebAuthn/Passkey (`@simplewebauthn/server`) + GitHub OAuth (`arctic`) |
+| Authentication | JWT (`@fastify/jwt`) + bcryptjs (password auth) + WebAuthn/Passkey (`@simplewebauthn/server`) + GitHub OAuth / OpenID Connect (`arctic`) |
 | Rate Limiting | `@fastify/rate-limit` (applied to auth endpoints) |
 | Deployment | `docker compose up -d` (NAS, VPS, cloud VM, etc.) |
 
@@ -117,7 +117,7 @@ All containers are connected via an `internal` bridge network. No ports are expo
 | **Translation** | `server/providers/translate/` | Google Cloud Translation API v2 / DeepL (alternative to LLM translation) |
 | **Chat Service** | `server/chat/` | MCP server + tool definitions, 4 backend adapters, conversation persistence |
 | **HTML Cleaner** | `server/lib/cleaner/` | 3-phase pipeline: pre-clean → Readability → post-clean (selector-based, scoring-based, normalization) |
-| **Auth** | `server/auth*.ts`, `server/passkey*.ts`, `server/oauth*.ts` | JWT + bcryptjs + WebAuthn/Passkey + GitHub OAuth |
+| **Auth** | `server/auth*.ts`, `server/passkey*.ts`, `server/oauth*.ts` | JWT + bcryptjs + WebAuthn/Passkey + GitHub OAuth + OIDC |
 | **RSS Bridge** | `server/rss-bridge.ts` | LLM-inferred CSS selectors for sites without RSS feeds |
 | **Frontend** | `src/` | React SPA — SWR data fetching, 37+ components, 22+ hooks, PWA (with offline queue) |
 

@@ -16,6 +16,7 @@ interface AuthMethods {
   password: { enabled: boolean }
   passkey: { enabled: boolean; count: number }
   github?: { enabled: boolean }
+  oidc?: { enabled: boolean }
 }
 
 export function GitHubOAuthSettings() {
@@ -41,7 +42,7 @@ export function GitHubOAuthSettings() {
 
   const passwordEnabled = methods?.password?.enabled !== false
   const passkeyCount = methods?.passkey?.count ?? 0
-  const canDisableGithub = passwordEnabled || passkeyCount > 0
+  const canDisableGithub = passwordEnabled || passkeyCount > 0 || methods?.oidc?.enabled === true
 
   if (!config || !methods) return null
 
