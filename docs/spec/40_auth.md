@@ -6,7 +6,7 @@
 
 ### Approach
 
-A hybrid of four methods: password authentication with JWT + bcryptjs, passwordless authentication with WebAuthn/Passkey, social login with GitHub OAuth, and API key authentication for external tool access. Password/Passkey/OAuth can be independently enabled/disabled (with at least one always remaining active). API keys are always available once created.
+A hybrid of five methods: password authentication with JWT + bcryptjs, passwordless authentication with WebAuthn/Passkey, social login with GitHub OAuth, single sign-on with any OpenID Connect provider (Pocket ID, Authelia, Authentik, Keycloak, ...), and API key authentication for external tool access. Password/Passkey/GitHub OAuth/OIDC can be independently enabled/disabled (with at least one always remaining active). API keys are always available once created.
 
 ### DB Schema
 
@@ -120,6 +120,30 @@ Security considerations:
 - Client ID/Secret are stored in the `settings` table (zero additional env vars)
 - Can be dynamically toggled ON/OFF from the settings screen
 
+### OpenID Connect Authentication Flow
+
+Generic OIDC login (`server/auth/oidc-routes.ts`), designed for self-hosted identity providers such as Pocket ID. Configured under Settings → Security → OpenID Connect.
+
+```
+1. Click "Sign in with <display name>" on the login screen
+2. Send window.location.origin to POST /api/oauth/oidc/authorize
+3. Server: reads <issuer>/.well-known/openid-configuration (cached 1 hour, issuer must match)
+4. Server: generates state + PKCE verifier (S256), stores both in memory (5-minute TTL)
+5. Frontend: redirects to the provider's authorization endpoint (scopes: openid email profile)
+6. Provider → redirects to GET /api/oauth/oidc/callback?code=xxx&state=yyy
+7. Server: validates state → exchanges code (with PKCE verifier) at the token endpoint
+8. Server: fetches the userinfo endpoint with the access token
+9. Server: matches email (unless email_verified is false), preferred_username or sub against the allow list
+10. Server: issues JWT → one-time exchange code → redirects to /?oauth_code=<exchange_code>
+11. AuthGate: exchanges the code via POST /api/oauth/github/token (shared by all external providers)
+```
+
+Security considerations:
+- The allow list is mandatory: OIDC cannot be enabled without at least one allowed identity, since a provider may admit users other than the owner
+- PKCE (S256) plus single-use state; works with confidential clients (client secret) and public clients (no secret)
+- Identity comes from the userinfo endpoint over a direct server-to-server TLS call, so the ID token is not parsed
+- An email the provider marks as unverified is ignored for matching
+
 ### JWT Token
 
 - Algorithm: HS256
@@ -156,10 +180,14 @@ Invariant: **at least one authentication method is always enabled**
 
 | Action | Allowed when |
 |---|---|
-| Disable password authentication | Passkey > 0 OR GitHub OAuth enabled |
-| Delete last Passkey | Password authentication enabled OR GitHub OAuth enabled |
-| Disable GitHub OAuth | Password authentication enabled OR Passkey > 0 |
+| Disable password authentication | Passkey > 0 OR GitHub OAuth enabled OR OIDC enabled |
+| Delete last Passkey | Password authentication enabled OR GitHub OAuth enabled OR OIDC enabled |
+| Disable GitHub OAuth | Password authentication enabled OR Passkey > 0 OR OIDC enabled |
+| Disable OIDC | Password authentication enabled OR Passkey > 0 OR GitHub OAuth enabled |
 | Clear GitHub OAuth settings (when it is the only auth method) | Blocked |
+| Clear OIDC issuer, client ID or allow list (when it is the only auth method) | Blocked |
+
+The check is centralized in `hasOtherLoginMethod()` (`server/auth/sso.ts`).
 
 ### Startup Guard
 
@@ -227,6 +255,7 @@ Skip authentication checks with `AUTH_DISABLED=1`. Only effective when `NODE_ENV
 | `POST /api/auth/login/verify` | 5 req/min |
 | `GET /api/oauth/github/callback` | 10 req/min |
 | `POST /api/oauth/github/token` | 5 req/min |
+| `GET /api/oauth/oidc/callback` | 10 req/min |
 | All other APIs | 100 req/min (global) |
 
 ### Security

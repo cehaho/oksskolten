@@ -242,6 +242,69 @@ GitHub OAuth settings are stored in the `settings` table (zero additional env va
 | `oauth_github_client_secret` | `xxxxxxxxxxxxxxxx` |
 | `oauth_github_allowed_users` | Comma-separated GitHub usernames (empty means App owner only) |
 
+#### OpenID Connect Endpoints
+
+Generic OIDC login (Pocket ID, Authelia, Authentik, ...). See [40_auth.md](./40_auth.md) for the flow.
+
+**POST /api/oauth/oidc/authorize** — Get the provider authorization URL (public)
+
+```json
+// Request
+{ "origin": "http://localhost:5174" }
+
+// Response: 200
+{ "url": "https://id.example.com/authorize?response_type=code&client_id=...&state=...&code_challenge=...&code_challenge_method=S256&scope=openid+email+profile&redirect_uri=..." }
+```
+
+Returns `400` when OIDC is not enabled, `502` when the discovery document cannot be fetched.
+
+**GET /api/oauth/oidc/callback** — Provider callback (public, rate limit: 10 requests/minute)
+
+State verification → code exchange with PKCE → userinfo → allow-list match → JWT → one-time exchange code → redirect to `/?oauth_code=<code>`. The code is redeemed with `POST /api/oauth/github/token`. Errors redirect to `/?oauth_error=<reason>`.
+
+**GET /api/oauth/oidc/config** — Get OIDC config (auth required)
+
+```json
+// Response: 200
+{ "enabled": true, "configured": true, "issuer": "https://id.example.com", "clientId": "xxx", "hasClientSecret": true, "allowedUsers": "me@example.com", "displayName": "Pocket ID" }
+```
+
+The client secret is never returned.
+
+**POST /api/oauth/oidc/config** — Update OIDC config (auth required)
+
+```json
+// Request (every field optional)
+{ "issuer": "https://id.example.com", "clientId": "xxx", "clientSecret": "xxx", "allowedUsers": "me@example.com", "displayName": "Pocket ID" }
+```
+
+`issuer` must be an http(s) URL; a trailing slash is dropped. An empty `clientSecret` keeps the stored value. When OIDC is the only login method, clearing `issuer`, `clientId` or `allowedUsers` is blocked.
+
+**POST /api/oauth/oidc/toggle** — Toggle OIDC on/off (auth required)
+
+```json
+// Request
+{ "enabled": true }
+
+// Response: 200
+{ "ok": true, "enabled": true }
+```
+
+Enabling requires issuer, client ID and a non-empty allow list. Disabling checks for lockout prevention.
+
+OIDC settings are stored in the `settings` table:
+
+| key | Example value |
+|---|---|
+| `auth.oidc_enabled` | `1` / `0` |
+| `auth.oidc_issuer` | `https://id.example.com` |
+| `auth.oidc_client_id` | Client ID from the provider |
+| `auth.oidc_client_secret` | Client secret (empty for a public client) |
+| `auth.oidc_allowed_users` | Comma-separated emails, usernames or `sub` values (required) |
+| `auth.oidc_display_name` | Login button label (default `Pocket ID`) |
+
+`GET /api/auth/methods` also returns `oidc: { enabled, name }`.
+
 #### Auth Required (JWT or API Key)
 
 All API endpoints except auth endpoints and public Passkey endpoints require authentication via one of:

@@ -72,7 +72,7 @@ Because Oksskolten always has the complete text, AI summarization and translatio
 - **Full-Text Search** — Meilisearch-powered search across your entire article archive
 - **Smart Fetching** — Adaptive per-feed scheduling, conditional HTTP requests (ETag/Last-Modified), content-hash deduplication, exponential backoff, and tracking parameter removal
 - **PWA** — Offline reading, background sync, and add-to-home-screen support
-- **Multi-Auth** — Password, Passkey (WebAuthn), and GitHub OAuth — each independently configurable
+- **Multi-Auth** — Password, Passkey (WebAuthn), GitHub OAuth, and OpenID Connect (Pocket ID, Authelia, Authentik, ...) — each independently configurable
 - **Smart Feed Management** — Auto-discovery, CSS selector-based feeds (via RSS Bridge), bot bypass (FlareSolverr), and automatic disabling of dead feeds
 - **Article Clipping** — Save any URL as an article, with full content extraction
 - **Theming** — 14 built-in color themes + custom theme import via JSON, 9 article fonts, 8 code highlighting styles
@@ -158,7 +158,7 @@ Fork-specific environment variables (Reddit, Bluesky, vLLM) are documented in [`
 | Database | [SQLite](https://sqlite.org/) via [libsql](https://github.com/tursodatabase/libsql) (WAL mode) |
 | AI | [Anthropic](https://docs.anthropic.com/) / [Gemini](https://ai.google.dev/) / [OpenAI](https://platform.openai.com/) |
 | Search | [Meilisearch](https://www.meilisearch.com/) |
-| Auth | JWT + [Passkey / WebAuthn](https://webauthn.io/) + GitHub OAuth |
+| Auth | JWT + [Passkey / WebAuthn](https://webauthn.io/) + GitHub OAuth + OpenID Connect |
 | Deployment | Docker Compose + [Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/) |
 
 ## Architecture
@@ -242,7 +242,7 @@ The feed fetcher minimizes bandwidth and adapts to each feed's behavior, inspire
 | **Database** | SQLite (embedded, WAL) | PostgreSQL (external) | MySQL/PG/SQLite | SaaS |
 | **Deployment** | Single container | Binary + PostgreSQL | PHP + web server + DB | SaaS |
 | **Offline reading** | PWA with background sync | — | — | Mobile apps only |
-| **Auth** | Password + Passkey/WebAuthn + GitHub OAuth | Password + API key | Password + API key | Google/Apple/social + SAML (Enterprise) |
+| **Auth** | Password + Passkey/WebAuthn + GitHub OAuth + OIDC | Password + API key | Password + API key | Google/Apple/social + SAML (Enterprise) |
 | **Themes** | 14 + custom JSON import | Light/Dark | ~10 themes | — |
 | **Language** | Node.js (TypeScript) | Go | PHP | — |
 | **Price** | Free / OSS (AGPL-3.0) | Free / OSS (Apache-2.0) | Free / OSS (AGPL-3.0) | $12.99/mo (Pro+) |

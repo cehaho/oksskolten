@@ -4,7 +4,7 @@ import { Input } from '../components/ui/input'
 import { FormField } from '../components/ui/form-field'
 import { useI18n } from '@/i18n'
 import { useDarkMode, useTheme } from '@/hooks/preferences'
-import { Fingerprint, Github } from 'lucide-react'
+import { Fingerprint, Github, KeyRound } from 'lucide-react'
 import { SetupPage } from './setup-page'
 
 interface AuthMethods {
@@ -12,6 +12,7 @@ interface AuthMethods {
   password: { enabled: boolean }
   passkey: { enabled: boolean; count: number }
   github?: { enabled: boolean }
+  oidc?: { enabled: boolean; name: string }
 }
 
 export function LoginPage({ onLogin }: { onLogin?: (token: string) => void }) {
@@ -25,6 +26,7 @@ export function LoginPage({ onLogin }: { onLogin?: (token: string) => void }) {
   const [passkeyLoading, setPasskeyLoading] = useState(false)
   const [methods, setMethods] = useState<AuthMethods | null>(null)
   const [githubLoading, setGithubLoading] = useState(false)
+  const [oidcLoading, setOidcLoading] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
 
   // Prevent browser/PWA from auto-focusing form inputs on mount.
@@ -56,7 +58,7 @@ export function LoginPage({ onLogin }: { onLogin?: (token: string) => void }) {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     if (params.get('oauth_error')) {
-      setError(t('login.githubError'))
+      setError(t('login.ssoError'))
       params.delete('oauth_error')
       const clean = params.toString()
       window.history.replaceState({}, '', clean ? `/?${clean}` : '/')
@@ -69,6 +71,8 @@ export function LoginPage({ onLogin }: { onLogin?: (token: string) => void }) {
 
   const showPasskey = methods?.passkey?.enabled && methods.passkey.count > 0 && browserSupportsWebAuthn()
   const showGitHub = methods?.github?.enabled === true
+  const showOidc = methods?.oidc?.enabled === true
+  const oidcName = methods?.oidc?.name || 'OIDC'
   const showPassword = methods?.password?.enabled !== false
 
   async function handlePasskeyLogin() {
@@ -127,6 +131,24 @@ export function LoginPage({ onLogin }: { onLogin?: (token: string) => void }) {
     }
   }
 
+  async function handleOidcLogin() {
+    setError(null)
+    setOidcLoading(true)
+    try {
+      const res = await fetch('/api/oauth/oidc/authorize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ origin: window.location.origin }),
+      })
+      if (!res.ok) throw new Error('Failed')
+      const { url } = await res.json()
+      window.location.href = url
+    } catch {
+      setError(t('login.oidcError', { name: oidcName }))
+      setOidcLoading(false)
+    }
+  }
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     setError(null)
@@ -163,7 +185,7 @@ export function LoginPage({ onLogin }: { onLogin?: (token: string) => void }) {
         <h1 className="mb-1.5 text-xl font-bold text-text select-none">{t('login.title')}</h1>
         <p className="mb-6 text-sm text-muted select-none">{t('login.subtitle')}</p>
 
-        {(showPasskey || showGitHub) && (
+        {(showPasskey || showGitHub || showOidc) && (
           <>
             {showPasskey && (
               <button
@@ -186,6 +208,18 @@ export function LoginPage({ onLogin }: { onLogin?: (token: string) => void }) {
               >
                 <Github size={18} />
                 {githubLoading ? t('login.loading') : t('login.github')}
+              </button>
+            )}
+
+            {showOidc && (
+              <button
+                type="button"
+                onClick={handleOidcLogin}
+                disabled={oidcLoading}
+                className={`w-full flex items-center justify-center gap-2 rounded-lg border border-border bg-bg-card px-4 py-2.5 text-sm font-medium text-text transition-colors hover:bg-hover disabled:opacity-50 select-none${showPasskey || showGitHub ? ' mt-2' : ''}`}
+              >
+                <KeyRound size={18} />
+                {oidcLoading ? t('login.loading') : t('login.oidc', { name: oidcName })}
               </button>
             )}
 

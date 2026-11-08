@@ -3,7 +3,10 @@ import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import { GitHub, generateState } from 'arctic'
 import { getDb, getSetting, upsertSetting } from '../db.js'
-import { requireAuth, getOrigin, getCredentialCount } from './guards.js'
+import { requireAuth, getOrigin } from './guards.js'
+import { exchangeCodes, isGitHubOAuthEnabled, hasOtherLoginMethod } from './sso.js'
+
+export { isGitHubOAuthEnabled }
 import { TtlStore } from '../lib/ttl-store.js'
 import { parseOrBadRequest } from '../lib/validation.js'
 
@@ -33,18 +36,10 @@ const GithubToggleBody = z.object({
 // --- In-memory stores ---
 
 const STATE_TTL = 300_000 // 5 min
-const CODE_TTL = 60_000 // 60 sec
 
 const oauthStates = new TtlStore<{ redirectURI: string }>(STATE_TTL)
-const exchangeCodes = new TtlStore<{ token: string }>(CODE_TTL)
 
 // --- Helpers ---
-
-export function isGitHubOAuthEnabled(): boolean {
-  return getSetting('auth.github_enabled') === '1'
-    && !!getSetting('auth.github_client_id')
-    && !!getSetting('auth.github_client_secret')
-}
 
 function createGitHubClient(redirectURI?: string | null): GitHub | null {
   const clientId = getSetting('auth.github_client_id')
@@ -172,6 +167,7 @@ export async function oauthRoutes(app: FastifyInstance): Promise<void> {
   })
 
   // POST /api/oauth/github/token — public, rate-limited
+  // Shared by every external provider (GitHub, OIDC): exchanges the one-time code
   app.post('/api/oauth/github/token', {
     config: { rateLimit: { max: 5, timeWindow: '1 minute' } },
   }, async (request, reply) => {
@@ -205,9 +201,7 @@ export async function oauthRoutes(app: FastifyInstance): Promise<void> {
 
     // Lockout prevention: if GitHub OAuth is the only enabled auth method,
     // don't allow breaking changes
-    const passwordEnabled = getSetting('auth.password_enabled') !== '0'
-    const passkeyCount = getCredentialCount()
-    const isOnlyMethod = isGitHubOAuthEnabled() && !passwordEnabled && passkeyCount === 0
+    const isOnlyMethod = isGitHubOAuthEnabled() && !hasOtherLoginMethod('github')
 
     if (isOnlyMethod) {
       if (body.clientId !== undefined && !body.clientId.trim()) {
@@ -252,9 +246,7 @@ export async function oauthRoutes(app: FastifyInstance): Promise<void> {
       }
     } else {
       // Lockout prevention
-      const passwordEnabled = getSetting('auth.password_enabled') !== '0'
-      const passkeyCount = getCredentialCount()
-      if (!passwordEnabled && passkeyCount === 0) {
+      if (!hasOtherLoginMethod('github')) {
         return reply.status(400).send({ error: 'Cannot disable GitHub OAuth without an alternative login method' })
       }
     }

@@ -6,6 +6,7 @@ import { useI18n, APP_NAME } from '@/i18n'
 import { PasswordSettings } from './components/password-settings'
 import { PasskeySettings } from './components/passkey-settings'
 import { GitHubOAuthSettings } from './components/github-oauth-settings'
+import { OidcSettings } from './components/oidc-settings'
 import { ApiTokenSettings } from './components/api-token-settings'
 import { ImageStorageSettings } from './components/image-storage-settings'
 import { GeneralTab } from './tabs/general-tab'
@@ -99,6 +100,8 @@ export function SettingsPage() {
               <PasskeySettings />
               <Separator />
               <GitHubOAuthSettings />
+              <Separator />
+              <OidcSettings />
               <Separator />
               <ApiTokenSettings />
             </>
