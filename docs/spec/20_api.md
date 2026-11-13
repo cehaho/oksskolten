@@ -278,7 +278,7 @@ The client secret is never returned.
 { "issuer": "https://id.example.com", "clientId": "xxx", "clientSecret": "xxx", "allowedUsers": "me@example.com", "displayName": "Pocket ID" }
 ```
 
-`issuer` must be an http(s) URL; a trailing slash is dropped. An empty `clientSecret` keeps the stored value. When OIDC is the only login method, clearing `issuer`, `clientId` or `allowedUsers` is blocked.
+`issuer` must be an http(s) URL; a trailing slash is dropped. An empty `clientSecret` keeps the stored value. When OIDC is the only login method, clearing `issuer` or `clientId` is blocked. An empty `allowedUsers` admits every user the provider authenticates.
 
 **POST /api/oauth/oidc/toggle** — Toggle OIDC on/off (auth required)
 
@@ -290,7 +290,7 @@ The client secret is never returned.
 { "ok": true, "enabled": true }
 ```
 
-Enabling requires issuer, client ID and a non-empty allow list. Disabling checks for lockout prevention.
+Enabling requires issuer and client ID. Disabling checks for lockout prevention.
 
 OIDC settings are stored in the `settings` table:
 
@@ -300,7 +300,7 @@ OIDC settings are stored in the `settings` table:
 | `auth.oidc_issuer` | `https://id.example.com` |
 | `auth.oidc_client_id` | Client ID from the provider |
 | `auth.oidc_client_secret` | Client secret (empty for a public client) |
-| `auth.oidc_allowed_users` | Comma-separated emails, usernames or `sub` values (required) |
+| `auth.oidc_allowed_users` | Comma-separated emails, usernames or `sub` values (empty = any user the provider authenticates) |
 | `auth.oidc_display_name` | Login button label (default `Pocket ID`) |
 
 `GET /api/auth/methods` also returns `oidc: { enabled, name }`.

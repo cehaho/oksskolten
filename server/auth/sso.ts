@@ -29,7 +29,6 @@ export function getOidcAllowedUsers(): string[] {
 export function isOidcConfigured(): boolean {
   return !!getSetting('auth.oidc_issuer')
     && !!getSetting('auth.oidc_client_id')
-    && getOidcAllowedUsers().length > 0
 }
 
 export function isOidcEnabled(): boolean {

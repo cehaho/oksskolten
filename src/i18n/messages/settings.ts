@@ -454,16 +454,16 @@ export const settings = {
   'settings.oidcClientSecretDesc': { ja: 'Client Secret（パブリッククライアントの場合は空欄）', en: 'Client Secret (leave empty for a public client)', zh: 'Client Secret（公共客户端留空）'},
   'settings.oidcDisplayName': { ja: 'ボタンの表示名', en: 'Button label', zh: '按钮名称'},
   'settings.oidcAllowedUsersDesc': {
-    ja: 'ログインを許可するユーザーのメールアドレス、ユーザー名、または sub をカンマ区切りで入力してください（必須）。',
-    en: 'Emails, usernames or subject IDs allowed to log in, separated by commas (required).',
-    zh: '允许登录的邮箱、用户名或 sub，用逗号分隔（必填）。'
+    ja: 'ログインを許可するユーザーのメールアドレス、ユーザー名、または sub をカンマ区切りで入力してください。\n\n空欄の場合、プロバイダーが認証したすべてのユーザーがログインできます。その場合はプロバイダー側でクライアントへのアクセスを制限してください（Pocket ID: Allowed User Groups）。',
+    en: 'Emails, usernames or subject IDs allowed to log in, separated by commas.\n\nIf empty, any user the provider authenticates can log in. In that case, restrict access to the client in your provider (Pocket ID: Allowed User Groups).',
+    zh: '允许登录的邮箱、用户名或 sub，用逗号分隔。\n\n如果为空，提供商认证的任何用户都可以登录。此时请在提供商中限制对该客户端的访问（Pocket ID：Allowed User Groups）。'
   },
-  'settings.oidcAllowedUsersPlaceholder': { ja: 'you@example.com', en: 'you@example.com', zh: 'you@example.com'},
+  'settings.oidcAllowedUsersPlaceholder': { ja: '空欄 = プロバイダーが許可した全ユーザー', en: 'Empty = anyone the provider allows', zh: '留空 = 提供商允许的所有用户'},
   'settings.oidcGuideStep1': { ja: 'OIDC プロバイダーで新しいクライアントを作成', en: 'Create a new client in your OIDC provider (Pocket ID: OIDC Clients → Add OIDC Client)', zh: '在 OIDC 提供商中创建新客户端'},
   'settings.oidcGuideStep2': { ja: 'Callback URL に次の値を設定:', en: 'Set the callback URL to:', zh: '将回调 URL 设置为：'},
-  'settings.oidcGuideStep3': { ja: 'Issuer URL、Client ID、Client Secret を下のフォームに貼り付けて保存', en: 'Paste the issuer URL, Client ID and Client Secret below, and save', zh: '将 Issuer URL、Client ID 和 Client Secret 粘贴到下方并保存'},
+  'settings.oidcGuideStep3': { ja: 'Issuer URL、Client ID、Client Secret を下のフォームに貼り付けて保存', en: 'Paste the issuer URL, Client ID and Client Secret below, and save. Restrict who can use the client in your provider (Pocket ID: Allowed User Groups)', zh: '将 Issuer URL、Client ID 和 Client Secret 粘贴到下方并保存'},
   'settings.oidcSaved': { ja: 'OIDC設定を保存しました', en: 'OIDC settings saved', zh: 'OIDC 设置已保存'},
-  'settings.oidcNotConfigured': { ja: 'Issuer URL、Client ID、許可ユーザーを設定してください', en: 'Set the issuer URL, Client ID and allowed users first', zh: '请先设置 Issuer URL、Client ID 和允许的用户'},
+  'settings.oidcNotConfigured': { ja: 'Issuer URLとClient IDを設定してください', en: 'Set the issuer URL and Client ID first', zh: '请先设置 Issuer URL 和 Client ID'},
   'provider.anthropic': { ja: 'Anthropic API', en: 'Anthropic API', zh: 'Anthropic API'},
   'provider.gemini': { ja: 'Gemini API', en: 'Gemini API', zh: 'Gemini API'},
   'provider.openai': { ja: 'OpenAI API', en: 'OpenAI API', zh: 'OpenAI API'},
