@@ -8,13 +8,19 @@ import { requireJson } from '../../auth/index.js'
 import { parseOrBadRequest } from '../../lib/validation.js'
 import { logger } from '../../logger.js'
 import { FILES, PROJECT_ROOT, RUN_ID_RE, loadConfig, newRunId, outputDir } from './config.js'
+import { readLock } from './lock.js'
 import type { ProgressFile, SampleFile } from './types.js'
 
 /**
  * Settings → Classification → accuracy bench: start, resume or stop a run and
  * read its report without a terminal. The bench runs in a child process (it
  * points its own database connection at a snapshot, which the server cannot
- * do in-process); one run at a time.
+ * do in-process); one run at a time, enforced twice: the child handle below
+ * for runs this server started, and the lock file run.ts takes, which also
+ * covers a run started with `npm run bench:notjev`.
+ *
+ * Registered inside the authenticated API scope (routes/index.ts adds
+ * requireAuth to every route of settingsRoutes).
  */
 
 const log = logger.child('notjev-bench')
@@ -44,8 +50,15 @@ function readJson<T>(file: string): T | null {
   }
 }
 
+/** The run holding the lock file: started by this server or from the command line */
+function lockedRun(): string | null {
+  const held = readLock(outputDir(loadConfig()))
+  return held ? path.basename(held.runDir) : null
+}
+
 function listRuns(): BenchRunSummary[] {
   const dir = outputDir(loadConfig())
+  const locked = lockedRun()
   if (!fs.existsSync(dir)) return []
   return fs.readdirSync(dir)
     .filter(name => RUN_ID_RE.test(name) && fs.statSync(path.join(dir, name)).isDirectory())
@@ -55,7 +68,7 @@ function listRuns(): BenchRunSummary[] {
       const progress = readJson<ProgressFile>(path.join(runDir, FILES.progress))
       const sample = readJson<SampleFile>(path.join(runDir, FILES.sample))
       const arb = readJson<{ items?: Record<string, string> }>(path.join(runDir, FILES.arbitrations))
-      const running = childRun === id
+      const running = childRun === id || locked === id
       return {
         id,
         running,
@@ -100,8 +113,9 @@ function start(id: string, env: Record<string, string>): void {
 }
 
 function busy(reply: FastifyReply): boolean {
-  if (!child) return false
-  reply.status(409).send({ error: `A bench run is already in progress (${childRun})` })
+  const running = child ? childRun : lockedRun()
+  if (!running) return false
+  reply.status(409).send({ error: `A bench run is already in progress (${running})` })
   return true
 }
 
@@ -115,7 +129,7 @@ const ArbitrationsBody = z.object({
 export async function notjevBenchRoutes(api: FastifyInstance): Promise<void> {
   api.get('/api/classification/bench', async (_request, reply) => {
     const cfg = loadConfig()
-    reply.send({ running: childRun, runs: listRuns(), sampleSize: cfg.sampleSize, trialSize: cfg.trialSize })
+    reply.send({ running: childRun ?? lockedRun(), runs: listRuns(), sampleSize: cfg.sampleSize, trialSize: cfg.trialSize })
   })
 
   api.post('/api/classification/bench/start', { preHandler: [requireJson] }, async (request, reply) => {

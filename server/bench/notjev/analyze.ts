@@ -1,7 +1,20 @@
 import notjev from 'notjev'
 import {
+  analyzeLabels,
+  compareRotations,
+  diagnoseRepro,
+  labelingSet,
+  type LabelAnalysis,
+  type LabelingSet,
+  type ReproDiagnosis,
+  type RotationComparison,
+} from './importance.js'
+import {
   QUESTIONS,
+  ROTATION_READINGS,
   recordKey,
+  type ImportanceContext,
+  type ImportanceLabel,
   type ArbitrationFile,
   type ArticleMeta,
   type BenchQuestion,
@@ -84,8 +97,29 @@ export interface QuestionAnalysis {
   disagreements: Disagreement[]
 }
 
+/** Inputs of the importance-specific figures (labels, rotations, reproducibility diagnosis) */
+export interface ImportanceInputs {
+  seed: number
+  rotations: boolean
+  labeling: { size: number; perStratum: number }
+  labels: Record<string, ImportanceLabel>
+  contexts: Map<number, ImportanceContext>
+  /** When migration 0022 (importance) was applied, from the snapshot's _migrations */
+  importanceSince: string | null
+}
+
+export interface ImportanceAnalysis {
+  theta: number
+  rotationsOn: boolean
+  labeling: LabelingSet
+  labels: LabelAnalysis
+  rotations: RotationComparison | null
+  repro: ReproDiagnosis
+}
+
 export interface Analysis {
   questions: QuestionAnalysis[]
+  importance: ImportanceAnalysis | null
   totals: {
     articles: number
     articlesComplete: number
@@ -96,6 +130,7 @@ export interface Analysis {
     lastCallAt: string | null
     productionMs: number
     shuffledMs: number
+    rotationsMs: number
     reasonedMs: number
   }
   arbitrations: ArbitrationFile['items']
@@ -318,14 +353,30 @@ export function analyze(
   results: Map<string, BenchRecord>,
   thetas: number[],
   arbitrations: ArbitrationFile['items'] = {},
+  inputs: ImportanceInputs | null = null,
 ): Analysis {
   const all = [...results.values()]
   const sum = (xs: BenchRecord[]) => xs.reduce((a, r) => a + r.ms, 0)
   const at = all.map(r => r.at).sort()
   const complete = sample.articles.filter(a => QUESTIONS.every(q =>
-    ['production', 'shuffled', 'reasoned'].every(rd => results.has(`${a.id}|${rd}|${q}`)))).length
+    ['production', 'shuffled', 'reasoned'].every(rd => results.has(`${a.id}|${rd}|${q}`)))
+    && (!inputs?.rotations || ROTATION_READINGS.every(rd => results.has(recordKey(a.id, rd, 'importance'))))).length
+  let importance: ImportanceAnalysis | null = null
+  if (inputs) {
+    const theta = sample.settings.importanceTheta
+    const labeling = labelingSet(sample, results, { seed: inputs.seed, ...inputs.labeling })
+    importance = {
+      theta,
+      rotationsOn: inputs.rotations,
+      labeling,
+      labels: analyzeLabels(labeling, results, inputs.labels, thetas, theta, inputs.rotations),
+      rotations: inputs.rotations ? compareRotations(sample, results, theta) : null,
+      repro: diagnoseRepro(sample, results, inputs.contexts, inputs.importanceSince, theta, inputs.rotations),
+    }
+  }
   return {
     questions: QUESTIONS.map(q => analyzeQuestion(q, sample, results, thetas, arbitrations)),
+    importance,
     totals: {
       articles: sample.articles.length,
       articlesComplete: complete,
@@ -336,6 +387,7 @@ export function analyze(
       lastCallAt: at[at.length - 1] ?? null,
       productionMs: sum(all.filter(r => r.reading === 'production')),
       shuffledMs: sum(all.filter(r => r.reading === 'shuffled')),
+      rotationsMs: sum(all.filter(r => r.reading === 'rotation1' || r.reading === 'rotation2')),
       reasonedMs: sum(all.filter(r => r.reading === 'reasoned')),
     },
     arbitrations,

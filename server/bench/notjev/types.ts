@@ -3,11 +3,22 @@
 export type BenchQuestion = 'format' | 'theme' | 'importance'
 export const QUESTIONS: BenchQuestion[] = ['format', 'theme', 'importance']
 
-/** production: as classify.ts · shuffled: options permuted · reasoned: thinking-on reference */
-export type BenchReading = 'production' | 'shuffled' | 'reasoned'
+/**
+ * production: as classify.ts · shuffled: options permuted · reasoned: thinking-on reference ·
+ * rotation1 / rotation2: the importance question with its options rotated once / twice (the
+ * production order is rotation 0), averaged into the "importance by rotations" reading
+ */
+export type BenchReading = 'production' | 'shuffled' | 'reasoned' | 'rotation1' | 'rotation2'
 export const READINGS: BenchReading[] = ['production', 'shuffled', 'reasoned']
+export const ROTATION_READINGS = ['rotation1', 'rotation2'] as const
+export type RotationReading = typeof ROTATION_READINGS[number]
 
 export const CALLS_PER_ARTICLE = QUESTIONS.length * READINGS.length
+
+/** Calls of one article: 9, plus the 2 importance rotations when they are on */
+export function callsPerArticle(rotations: boolean): number {
+  return CALLS_PER_ARTICLE + (rotations ? ROTATION_READINGS.length : 0)
+}
 
 export function recordKey(articleId: number, reading: BenchReading, question: BenchQuestion): string {
   return `${articleId}|${reading}|${question}`
@@ -27,9 +38,9 @@ interface RecordBase {
   at: string
 }
 
-/** One-token readout (production or shuffled) */
+/** One-token readout (production, shuffled or an importance rotation) */
 export interface DecideRecord extends RecordBase {
-  reading: 'production' | 'shuffled'
+  reading: 'production' | 'shuffled' | RotationReading
   theta: number
   /** The server response as parsed: re-read offline by notjev's readResponse */
   resp: unknown
@@ -129,4 +140,29 @@ export interface ArbitrationFile {
   version: 1
   run: string
   items: Record<string, Arbitration>
+}
+
+/** The reader's blind importance label of one article; `unsure` = "I don't know" */
+export type ImportanceLabel = 'ESSENTIAL' | 'USEFUL' | 'SKIP' | 'unsure'
+export const IMPORTANCE_LABELS: ImportanceLabel[] = ['ESSENTIAL', 'USEFUL', 'SKIP', 'unsure']
+
+/** Labels exported from the report's labeling page, keyed by article id */
+export interface LabelsFile {
+  version: 1
+  run: string
+  items: Record<string, ImportanceLabel>
+}
+
+/**
+ * What the snapshot says about the reader context of an article's importance
+ * question, read by the pipeline for the reproducibility diagnosis
+ */
+export interface ImportanceContext {
+  articleId: number
+  /** Theme the context is keyed on: the stored theme (the one decided at classification time) */
+  theme: string | null
+  /** journal_instructions.updated_at of that theme, null when it has no instruction */
+  instructionUpdatedAt: string | null
+  /** journal_feedback rows of that theme created (or re-voted) after classified_at */
+  votesAfter: number
 }

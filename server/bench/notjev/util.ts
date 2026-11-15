@@ -46,6 +46,13 @@ export function permute<T>(items: readonly T[], seed: number): T[] {
   return [...items.slice(1), items[0]]
 }
 
+/** The list rotated left `k` times: rotate([A, B, C], 1) = [B, C, A] */
+export function rotate<T>(items: readonly T[], k: number): T[] {
+  if (!items.length) return []
+  const n = ((k % items.length) + items.length) % items.length
+  return [...items.slice(n), ...items.slice(0, n)]
+}
+
 /**
  * The final letter of a reasoned answer, or null when it cannot be read
  * without guessing. Accepted: the last "Answer: X" line outside the thinking
