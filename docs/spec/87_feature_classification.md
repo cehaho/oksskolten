@@ -38,7 +38,7 @@ Formats and themes show up in the sidebar with their unread counts (`/formats/:i
 | `classify.theme_theta` | `0.3` | Minimum margin for a theme (themes like AI / Computing overlap, and the top guess is usually right) |
 | `classify.hide_categories` | `on` | Show themes instead of categories in the sidebar and the tab bar |
 
-**Importance** is asked last, because its question carries the reader's journal instruction for the theme just decided and the titles of their 5 latest "more like this" / "less like this" votes on it ([92_feature_journal.md](./92_feature_journal.md)). Options are `ESSENTIAL`, `USEFUL` and `SKIP` (`IMPORTANCE` in `shared/classification.ts`), with a fixed theta of 0.3. Undecided stays `null`, which the journal reads as useful: a hesitating model never hides an article. Articles classified before importance existed keep `null` until a backfill with `all`.
+**Importance** is asked last, because its question carries the reader's journal instruction for the theme just decided and the titles of their 5 latest "more like this" / "less like this" votes on it ([89_feature_journal.md](./89_feature_journal.md)). Options are `ESSENTIAL`, `USEFUL` and `SKIP` (`IMPORTANCE` in `shared/classification.ts`), with a fixed theta of 0.3. Undecided stays `null`, which the journal reads as useful: a hesitating model never hides an article. Articles classified before importance existed keep `null` until a backfill with `all`.
 
 Server errors throw, so the queue retries. If neither question saw an option letter (`degraded`: no logprobs, or the model answered outside the menu) the call counts as a failure, not as "undecided".
 

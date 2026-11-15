@@ -14,6 +14,7 @@ Typical RSS readers only display the title and summary provided by the feed, req
 > - [80_feature_clip.md](./80_feature_clip.md) — Clip
 > - [81_feature_images.md](./81_feature_images.md) — Image Archive
 > - [82_feature_chat.md](./82_feature_chat.md) — Chat
+> - [82_feature_video_archive.md](./82_feature_video_archive.md) — Video Archive
 > - [83_feature_similarity.md](./83_feature_similarity.md) — Similar Article Detection
 > - [84_feature_keyboard_navigation.md](./84_feature_keyboard_navigation.md) — Keyboard Navigation
 > - [85_feature_ollama.md](./85_feature_ollama.md) — Ollama LLM Provider
@@ -23,7 +24,7 @@ Typical RSS readers only display the title and summary provided by the feed, req
 > - [87_feature_classification.md](./87_feature_classification.md) — Article Classification (formats and themes from a local model)
 > - [88_feature_github_trending.md](./88_feature_github_trending.md) — GitHub Trending
 > - [89_feature_discord_channel.md](./89_feature_discord_channel.md) — Discord Channels
-> - [92_feature_journal.md](./92_feature_journal.md) — Journal (on-demand sourced digest by theme)
+> - [89_feature_journal.md](./89_feature_journal.md) — Journal (on-demand sourced digest by theme)
 > - [90_perf_retry_backoff.md](./90_perf_retry_backoff.md) — Exponential Backoff for Article Retry
 > - [91_perf_score_recalculation.md](./91_perf_score_recalculation.md) — Score Recalculation Optimization
 

@@ -6,6 +6,8 @@ const L = ['A', 'B', 'C', 'D']
 describe('extractLetter', () => {
   it('reads the last "Answer: X" line', () => {
     expect(extractLetter('Maybe A at first.\nAnswer: A\n…on reflection\nAnswer: C', L)).toBe('C')
+    // Full-width colon, as some models write it
+    expect(extractLetter('Answer\uFF1A B', L)).toBe('B')
   })
 
   it('ignores letters inside the thinking block', () => {
