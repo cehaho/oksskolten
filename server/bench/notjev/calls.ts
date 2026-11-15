@@ -17,13 +17,14 @@ import { toWellFormedText } from '../../lib/text.js'
 import { FORMATS, IMPORTANCE, DEFAULT_IMPORTANCE_THETA } from '../../../shared/classification.js'
 import type { BenchConfig } from './config.js'
 import {
+  ROTATION_READINGS,
   recordKey,
   type BenchQuestion,
   type BenchRecord,
   type DecideRecord,
   type ReasonedRecord,
 } from './types.js'
-import { extractLetter, hashSeed, permute } from './util.js'
+import { extractLetter, hashSeed, permute, rotate } from './util.js'
 
 /**
  * The calls of the bench. Every prompt piece comes from classify.ts so the
@@ -127,12 +128,13 @@ export class BenchRunner {
     return { state, question: spec.text, options, theta: spec.theta }
   }
 
-  private async decide(articleId: number, reading: 'production' | 'shuffled', state: string, spec: QuestionSpec): Promise<DecideRecord> {
+  private async decide(articleId: number, reading: DecideRecord['reading'], state: string, spec: QuestionSpec): Promise<DecideRecord> {
     const key = recordKey(articleId, reading, spec.question)
     const done = this.results.get(key)
     if (done) return done as DecideRecord
-    const options = reading === 'shuffled'
-      ? permute(spec.options, hashSeed(this.cfg.seed, articleId, spec.question))
+    const options = reading === 'shuffled' ? permute(spec.options, hashSeed(this.cfg.seed, articleId, spec.question))
+      : reading === 'rotation1' ? rotate(spec.options, 1)
+      : reading === 'rotation2' ? rotate(spec.options, 2)
       : spec.options
     const d = await this.client.decide(this.q(state, spec, options))
     const rec = decideRecord(d, {
@@ -184,7 +186,7 @@ export class BenchRunner {
     this.save(rec)
   }
 
-  /** The 9 calls of one article; already-recorded calls are skipped */
+  /** The 9 calls of one article (11 with rotations); already-recorded calls are skipped */
   async runArticle(articleId: number): Promise<void> {
     const article = getArticleById(articleId)
     if (!article) throw new Error(`article ${articleId} not found in the snapshot`)
@@ -211,6 +213,11 @@ export class BenchRunner {
 
     // Same questions, options permuted; the importance text is the production one
     for (const spec of [format, theme, importance]) await this.decide(articleId, 'shuffled', state, spec)
+    // Importance in its two other option rotations (rotation 0 is the production call above),
+    // with the production question text, so only the order of the options changes
+    if (this.cfg.rotations) {
+      for (const reading of ROTATION_READINGS) await this.decide(articleId, reading, state, importance)
+    }
     for (const spec of [format, theme, importance]) await this.reason(articleId, state, spec)
   }
 }

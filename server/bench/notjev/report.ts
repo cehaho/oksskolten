@@ -1,5 +1,6 @@
 import type { Analysis, QuestionAnalysis, Rate, SweepPoint } from './analyze.js'
 import type { SampleFile } from './types.js'
+import { importanceSections, labelingData, labelingView, LABELING_CSS, LABELING_JS } from './report-importance.js'
 
 /**
  * The report: one self-contained HTML file (no server, no CDN). Charts are
@@ -122,19 +123,27 @@ function questionSection(q: QuestionAnalysis, thetas: number[]): string {
   </section>`
 }
 
-export function renderReport(runId: string, sample: SampleFile, a: Analysis, thetas: number[], durationMs: number): string {
+export function renderReport(
+  runId: string,
+  sample: SampleFile,
+  a: Analysis,
+  thetas: number[],
+  durationMs: number,
+  labels: Record<string, string> = {},
+): string {
   const s = sample.settings
   const t = a.totals
   const disagreements = a.questions.flatMap(q => q.disagreements)
   const data = JSON.stringify({ run: runId, disagreements, arbitrations: a.arbitrations }).replace(/</g, '\\u003c')
+  const labelingJson = JSON.stringify({ run: runId, ...labelingData(a.importance, labels) }).replace(/</g, '\\u003c')
   const summary = a.questions.map(q => `<tr><th><a href="#q-${q.question}">${QUESTION_TITLE[q.question]}</a></th><td>${q.articles ? `${(100 * (q.articles - q.undecided) / q.articles).toFixed(0)} %` : '–'}</td><td>${pctN(q.agreeDecided)}</td><td>${pctN(q.nullArm.rate)}</td><td>${pctN(q.position.changedTop)}</td><td>${q.arbitrated ? pct(q.arbitrated.notjev) : '–'}</td></tr>`).join('')
 
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>notjev accuracy bench</title>
 <style>
-:root{--bg:#fbfaf8;--card:#fff;--text:#1d1d1b;--muted:#6b6a66;--border:#e3e1dc;--accent:#2f6fde;--good:#2e8b57;--bad:#c2410c;--s1:#8a8a86;--s2:#2f6fde;--s3:#c2410c;--s4:#2e8b57;--heat:47,111,222}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#161615;--card:#1f1f1d;--text:#ecebe7;--muted:#a3a29d;--border:#34332f;--accent:#7aa7ff;--good:#5cc28a;--bad:#f08a5d;--s1:#9a9994;--s2:#7aa7ff;--s3:#f08a5d;--s4:#5cc28a;--heat:122,167,255}}
+:root{--bg:#fbfaf8;--card:#fff;--text:#1d1d1b;--muted:#6b6a66;--border:#e3e1dc;--accent:#2f6fde;--good:#2e8b57;--bad:#c2410c;--s1:#8a8a86;--s2:#2f6fde;--s3:#c2410c;--s4:#2e8b57;--s5:#7c3aed;--s6:#b45309;--heat:47,111,222}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#161615;--card:#1f1f1d;--text:#ecebe7;--muted:#a3a29d;--border:#34332f;--accent:#7aa7ff;--good:#5cc28a;--bad:#f08a5d;--s1:#9a9994;--s2:#7aa7ff;--s3:#f08a5d;--s4:#5cc28a;--s5:#b794f6;--s6:#f6c177;--heat:122,167,255}}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
 main{max-width:1080px;margin:0 auto;padding:24px 16px 80px}h1{font-size:24px;margin:0 0 4px}h2{font-size:20px;margin:40px 0 12px;padding-top:16px;border-top:1px solid var(--border)}h3{font-size:16px;margin:24px 0 8px}h4{font-size:14px;margin:8px 0}
 .muted{color:var(--muted)}code{font-size:13px}a{color:var(--accent)}
@@ -150,8 +159,11 @@ path.s1,path.s2,path.s3,path.s4{stroke-width:2}path.s1{stroke:var(--s1)}path.s2{
 button,select{font:inherit;font-size:13px;padding:4px 10px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);cursor:pointer}button.on{background:var(--accent);border-color:var(--accent);color:#fff}
 .dis{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px;margin:10px 0}.dis .title{font-weight:600}.dis .ex{font-size:13px;color:var(--muted);margin:6px 0}.dis .ans{display:flex;flex-wrap:wrap;gap:16px;font-size:14px;margin:6px 0}.dis .btns{display:flex;flex-wrap:wrap;gap:6px}
 .tag{font-size:12px;padding:1px 6px;border-radius:6px;border:1px solid var(--border);color:var(--muted)}
+${LABELING_CSS}
 </style></head>
 <body><main>
+${labelingView()}
+<div id="report-view">
 <h1>notjev accuracy bench</h1>
 <p class="muted">Run ${esc(runId)}${sample.trial ? ' · <b>trial mode</b>' : ''} · generated ${esc(new Date().toISOString())}</p>
 <table class="kv"><tbody>
@@ -161,14 +173,17 @@ button,select{font:inherit;font-size:13px;padding:4px 10px;border-radius:8px;bor
 <tr><th>Themes</th><td>${s.themes.map(th => `<span class="tag" title="${esc(th.description)}">${esc(th.id)}</span>`).join(' ')}</td></tr>
 <tr><th>Articles</th><td>${t.articles} sampled (${t.articlesComplete} complete) · ${sample.counts.labeledUsed} labeled of ${sample.counts.labeledAvailable} · ${sample.counts.excludedAsInjectedExamples} excluded as importance examples · seed ${sample.seed}</td></tr>
 <tr><th>Calls</th><td>${t.calls} · ${t.degradedReadouts} degraded readout(s) · ${t.reasonedUnreadable} unreadable or truncated reference(s)</td></tr>
-<tr><th>Duration</th><td>${fmtMs(durationMs)} wall clock · notjev ${fmtMs(t.productionMs + t.shuffledMs)} · reference ${fmtMs(t.reasonedMs)}</td></tr>
+<tr><th>Duration</th><td>${fmtMs(durationMs)} wall clock · notjev ${fmtMs(t.productionMs + t.shuffledMs)} · rotations ${fmtMs(t.rotationsMs)} · reference ${fmtMs(t.reasonedMs)}</td></tr>
 </tbody></table>
 <p class="muted">The reasoned reference is the same model with thinking on: agreement with it measures consistency, not truth. Your arbitrations below turn it into accuracy.</p>
+${a.importance ? `<p><b>Blind importance labeling:</b> <a href="#labeling" target="_blank" rel="noopener">open the labeling page</a> before reading the per-article lists of this report, which show verdicts.</p>` : ''}
 
 <h2>Summary</h2>
 <div class="scroll"><table class="kv"><thead><tr><th></th><th>decided</th><th>agreement (decided)</th><th>null arm</th><th>changes with order</th><th>arbitrated accuracy</th></tr></thead><tbody>${summary}</tbody></table></div>
 
 ${a.questions.map(q => questionSection(q, thetas)).join('')}
+
+${importanceSections(a.importance, thetas, lineChart)}
 
 <h2 id="disagreements">Disagreements notjev / reference <span class="muted">(${disagreements.length})</span></h2>
 <p class="muted">Your choices are kept in this browser. Export them, then import the file from Settings → Classification (or set <code>arbitrationsFile</code> in the config) to recompute the figures without any new call.</p>
@@ -180,8 +195,11 @@ ${a.questions.map(q => questionSection(q, thetas)).join('')}
   <button id="reset">Clear my choices</button>
 </div>
 <div id="list"></div>
+</div>
 </main>
 <script type="application/json" id="data">${data}</script>
+<script type="application/json" id="labeling-data">${labelingJson}</script>
+<script>${LABELING_JS}</script>
 <script>
 (function(){
   var D = JSON.parse(document.getElementById('data').textContent);

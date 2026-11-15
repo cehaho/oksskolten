@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import useSWR from 'swr'
 import { toast } from 'sonner'
-import { FileUp, FlaskConical, Loader2, Play, Square, ExternalLink } from 'lucide-react'
+import { FileUp, FlaskConical, Loader2, Play, Square, ExternalLink, Tags } from 'lucide-react'
 import { fetcher, apiPost, authHeaders } from '../../../lib/fetcher'
 import { useI18n } from '@/i18n'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
@@ -24,6 +24,7 @@ interface BenchRun {
   progress: BenchProgress | null
   hasReport: boolean
   arbitrations: number
+  labels?: number
 }
 
 interface BenchOverview {
@@ -62,7 +63,8 @@ export function ClassificationBench() {
   const [confirmFull, setConfirmFull] = useState(false)
   const [busy, setBusy] = useState(false)
   const fileInput = useRef<HTMLInputElement>(null)
-  const [importFor, setImportFor] = useState<string | null>(null)
+  // One hidden file input for both imports: which run, and which kind of file
+  const [importFor, setImportFor] = useState<{ id: string; kind: 'arbitrations' | 'labels' } | null>(null)
 
   async function call(url: string, body?: unknown) {
     setBusy(true)
@@ -91,17 +93,22 @@ export function ClassificationBench() {
     }
   }
 
-  async function importArbitrations(file: File) {
-    const id = importFor
+  async function importFile(file: File) {
+    const target = importFor
     setImportFor(null)
-    if (!id) return
+    if (!target) return
     try {
       const parsed = JSON.parse(await file.text()) as unknown
-      await call(`/api/classification/bench/runs/${encodeURIComponent(id)}/arbitrations`, parsed)
-      toast.success(t('classification.bench.arbitrationsImported'))
+      await call(`/api/classification/bench/runs/${encodeURIComponent(target.id)}/${target.kind}`, parsed)
+      toast.success(t(target.kind === 'labels' ? 'classification.bench.labelsImported' : 'classification.bench.arbitrationsImported'))
     } catch (err) {
       toast.error(err instanceof Error ? err.message : String(err))
     }
+  }
+
+  function pick(id: string, kind: 'arbitrations' | 'labels') {
+    setImportFor({ id, kind })
+    fileInput.current?.click()
   }
 
   if (!data) return null
@@ -150,6 +157,7 @@ export function ClassificationBench() {
               <span className="text-muted">
                 {r.trial ? t('classification.bench.trial') : t('classification.bench.full')} · {t('classification.bench.articles', { count: String(r.articles) })} · {statusText(r)}
                 {r.arbitrations > 0 && ` · ${t('classification.bench.arbitrations', { count: String(r.arbitrations) })}`}
+                {(r.labels ?? 0) > 0 && ` · ${t('classification.bench.labels', { count: String(r.labels) })}`}
               </span>
               {r.hasReport && (
                 <button type="button" onClick={() => { void openReport(r.id) }} className={smallButtonClass}>
@@ -164,10 +172,16 @@ export function ClassificationBench() {
                 </button>
               )}
               {r.hasReport && !running && (
-                <button type="button" disabled={busy} onClick={() => { setImportFor(r.id); fileInput.current?.click() }} className={smallButtonClass}>
-                  <FileUp size={12} />
-                  {t('classification.bench.importArbitrations')}
-                </button>
+                <>
+                  <button type="button" disabled={busy} onClick={() => pick(r.id, 'arbitrations')} className={smallButtonClass}>
+                    <FileUp size={12} />
+                    {t('classification.bench.importArbitrations')}
+                  </button>
+                  <button type="button" disabled={busy} onClick={() => pick(r.id, 'labels')} className={smallButtonClass}>
+                    <Tags size={12} />
+                    {t('classification.bench.importLabels')}
+                  </button>
+                </>
               )}
             </li>
           ))}
@@ -182,7 +196,7 @@ export function ClassificationBench() {
         onChange={e => {
           const file = e.target.files?.[0]
           e.target.value = ''
-          if (file) void importArbitrations(file)
+          if (file) void importFile(file)
         }}
       />
 

@@ -8,13 +8,19 @@ import { requireJson } from '../../auth/index.js'
 import { parseOrBadRequest } from '../../lib/validation.js'
 import { logger } from '../../logger.js'
 import { FILES, PROJECT_ROOT, RUN_ID_RE, loadConfig, newRunId, outputDir } from './config.js'
-import type { ProgressFile, SampleFile } from './types.js'
+import { readLock } from './lock.js'
+import { IMPORTANCE_LABELS, type ImportanceLabel, type ProgressFile, type SampleFile } from './types.js'
 
 /**
  * Settings → Classification → accuracy bench: start, resume or stop a run and
  * read its report without a terminal. The bench runs in a child process (it
  * points its own database connection at a snapshot, which the server cannot
- * do in-process); one run at a time.
+ * do in-process); one run at a time, enforced twice: the child handle below
+ * for runs this server started, and the lock file run.ts takes, which also
+ * covers a run started with `npm run bench:notjev`.
+ *
+ * Registered inside the authenticated API scope (routes/index.ts adds
+ * requireAuth to every route of settingsRoutes).
  */
 
 const log = logger.child('notjev-bench')
@@ -30,6 +36,7 @@ export interface BenchRunSummary {
   progress: ProgressFile | null
   hasReport: boolean
   arbitrations: number
+  labels: number
 }
 
 function runDirOf(id: string): string | null {
@@ -44,8 +51,15 @@ function readJson<T>(file: string): T | null {
   }
 }
 
+/** The run holding the lock file: started by this server or from the command line */
+function lockedRun(): string | null {
+  const held = readLock(outputDir(loadConfig()))
+  return held ? path.basename(held.runDir) : null
+}
+
 function listRuns(): BenchRunSummary[] {
   const dir = outputDir(loadConfig())
+  const locked = lockedRun()
   if (!fs.existsSync(dir)) return []
   return fs.readdirSync(dir)
     .filter(name => RUN_ID_RE.test(name) && fs.statSync(path.join(dir, name)).isDirectory())
@@ -55,7 +69,8 @@ function listRuns(): BenchRunSummary[] {
       const progress = readJson<ProgressFile>(path.join(runDir, FILES.progress))
       const sample = readJson<SampleFile>(path.join(runDir, FILES.sample))
       const arb = readJson<{ items?: Record<string, string> }>(path.join(runDir, FILES.arbitrations))
-      const running = childRun === id
+      const labels = readJson<{ items?: Record<string, string> }>(path.join(runDir, FILES.labels))
+      const running = childRun === id || locked === id
       return {
         id,
         running,
@@ -65,6 +80,7 @@ function listRuns(): BenchRunSummary[] {
         progress: progress && progress.status === 'running' && !running ? { ...progress, status: 'stopped' } : progress,
         hasReport: fs.existsSync(path.join(runDir, FILES.report)),
         arbitrations: Object.keys(arb?.items ?? {}).length,
+        labels: Object.keys(labels?.items ?? {}).length,
       }
     })
 }
@@ -100,8 +116,9 @@ function start(id: string, env: Record<string, string>): void {
 }
 
 function busy(reply: FastifyReply): boolean {
-  if (!child) return false
-  reply.status(409).send({ error: `A bench run is already in progress (${childRun})` })
+  const running = child ? childRun : lockedRun()
+  if (!running) return false
+  reply.status(409).send({ error: `A bench run is already in progress (${running})` })
   return true
 }
 
@@ -111,11 +128,17 @@ const ArbitrationsBody = z.object({
   run: z.string().optional(),
   items: z.record(z.string(), z.enum(['notjev', 'reference', 'neither'])),
 })
+const LabelsBody = z.object({
+  version: z.literal(1).optional(),
+  run: z.string().optional(),
+  // Keyed by article id, as the labeling page exports them
+  items: z.record(z.string().regex(/^\d+$/), z.enum(IMPORTANCE_LABELS as [ImportanceLabel, ...ImportanceLabel[]])),
+})
 
 export async function notjevBenchRoutes(api: FastifyInstance): Promise<void> {
   api.get('/api/classification/bench', async (_request, reply) => {
     const cfg = loadConfig()
-    reply.send({ running: childRun, runs: listRuns(), sampleSize: cfg.sampleSize, trialSize: cfg.trialSize })
+    reply.send({ running: childRun ?? lockedRun(), runs: listRuns(), sampleSize: cfg.sampleSize, trialSize: cfg.trialSize })
   })
 
   api.post('/api/classification/bench/start', { preHandler: [requireJson] }, async (request, reply) => {
@@ -150,6 +173,21 @@ export async function notjevBenchRoutes(api: FastifyInstance): Promise<void> {
     fs.writeFileSync(file, JSON.stringify({ version: 1, run: request.params.id, items: body.items }, null, 1))
     start(request.params.id, { NOTJEV_BENCH_ARBITRATIONS: file })
     reply.send({ id: request.params.id, arbitrations: Object.keys(body.items).length })
+  })
+
+  // Blind importance labels exported from the report's labeling page: same flow as arbitrations
+  api.post<{ Params: { id: string } }>('/api/classification/bench/runs/:id/labels', { preHandler: [requireJson] }, async (request, reply) => {
+    const runDir = runDirOf(request.params.id)
+    if (!runDir || !fs.existsSync(path.join(runDir, FILES.sample))) {
+      reply.status(404).send({ error: 'Unknown run' })
+      return
+    }
+    const body = parseOrBadRequest(LabelsBody, request.body, reply)
+    if (!body || busy(reply)) return
+    const file = path.join(runDir, FILES.labels)
+    fs.writeFileSync(file, JSON.stringify({ version: 1, run: request.params.id, items: body.items }, null, 1))
+    start(request.params.id, { NOTJEV_BENCH_LABELS: file })
+    reply.send({ id: request.params.id, labels: Object.keys(body.items).length })
   })
 
   api.post('/api/classification/bench/stop', async (_request, reply) => {
