@@ -34,6 +34,7 @@ describe('bench routes', () => {
       ['POST', '/api/classification/bench/stop'],
       ['POST', '/api/classification/bench/runs/notjev-bench-2026-11-01T00-00-00-000Z/resume'],
       ['POST', '/api/classification/bench/runs/notjev-bench-2026-11-01T00-00-00-000Z/arbitrations'],
+      ['POST', '/api/classification/bench/runs/notjev-bench-2026-11-01T00-00-00-000Z/labels'],
       ['GET', '/api/classification/bench/runs/notjev-bench-2026-11-01T00-00-00-000Z/report'],
     ] as const) {
       const res = await app.inject({ method, url, headers: json, payload: method === 'POST' ? {} : undefined })
@@ -50,5 +51,25 @@ describe('bench routes', () => {
     expect(list.json().running).toBe('notjev-bench-2026-11-01T00-00-00-000Z')
     // No run folder was created by the refused start
     expect(fs.readdirSync(dir).filter(n => n.startsWith('notjev-bench-'))).toEqual([])
+  })
+
+  it('validate imported labels and refuse them while another run holds the lock', async () => {
+    const id = 'notjev-bench-2026-11-02T00-00-00-000Z'
+    const url = `/api/classification/bench/runs/${id}/labels`
+    const unknown = await app.inject({ method: 'POST', url, headers: json, payload: { items: { 12: 'SKIP' } } })
+    expect(unknown.statusCode).toBe(404)
+
+    fs.mkdirSync(path.join(dir, id))
+    fs.writeFileSync(path.join(dir, id, 'sample.json'), JSON.stringify({ articles: [] }))
+    const bad = await app.inject({ method: 'POST', url, headers: json, payload: { items: { 12: 'MAYBE' } } })
+    expect(bad.statusCode).toBe(400)
+    const badKey = await app.inject({ method: 'POST', url, headers: json, payload: { items: { abc: 'SKIP' } } })
+    expect(badKey.statusCode).toBe(400)
+
+    fs.writeFileSync(lockPath(dir), JSON.stringify({ pid: process.pid, runDir: path.join(dir, 'other'), startedAt: '' }))
+    const locked = await app.inject({ method: 'POST', url, headers: json, payload: { version: 1, run: id, items: { 12: 'SKIP', 13: 'unsure' } } })
+    expect(locked.statusCode).toBe(409)
+    // Nothing written while refused
+    expect(fs.existsSync(path.join(dir, id, 'labels.json'))).toBe(false)
   })
 })

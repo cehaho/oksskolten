@@ -36,7 +36,7 @@ A candidate fix for the position bias, **measured only** (`server/ai/classify.ts
 
 1. Open `report.html` and follow **open the labeling page** (or add `#labeling` to its address). The page hides the rest of the report and shows neither notjev's nor the reference's answers. Do it before reading the per-article lists of the report, which show verdicts.
 2. 60 articles, drawn with the run's seed, stratified on notjev's production verdict (15 ESSENTIAL, 15 USEFUL, 15 SKIP, 15 undecided, completed from the other strata when one runs short), shown in a shuffled order. Articles whose title is an example in their own importance question are left out. Each card shows the title, source, link and the exact text sent to the model; answer ESSENTIAL, USEFUL, SKIP or *I don't know*. Choices stay in your browser, with a progress counter.
-3. Click **Export labels (JSON)**, then set in the config:
+3. Click **Export labels (JSON)**, then either press **Import labels** next to the run in the panel and pick the file (the way to go with the Docker image, which ships no `scripts/` folder), or set in the config:
 
    ```json
    "runDir": "data/notjev-bench-<ISO>",

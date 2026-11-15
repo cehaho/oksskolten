@@ -85,7 +85,7 @@ function labelsSection(a: ImportanceAnalysis, thetas: number[], lineChart: LineC
   const head = `<h2 id="imp-labels">Importance against your blind labels</h2>
     <p><a href="#labeling" target="_blank" rel="noopener">Open the blind labeling page</a> (${total} articles). ${L.labeled} labeled, ${L.unsure} “I don’t know”, ${L.pending} not labeled yet.</p>`
   if (!L.labeled) {
-    return `<section>${head}<p class="muted">No label imported yet. Label the articles, export the JSON, then set <code>labelsFile</code> in scripts/notjev-bench.config.json (with <code>runDir</code> set to this run) and run the bench again: the report is recomputed without any call.</p></section>`
+    return `<section>${head}<p class="muted">No label imported yet. Label the articles, export the JSON, then press <b>Import labels</b> next to this run in the settings panel (or set <code>labelsFile</code> in the config with <code>runDir</code> set to this run): the report is recomputed without any call.</p></section>`
   }
   const weights = `<table class="kv"><thead><tr><th>notjev verdict (stratum)</th><th>articles in the sample</th><th>drawn</th><th>labeled</th><th>“I don’t know”</th><th>weight per labeled article</th></tr></thead><tbody>${
     L.weights.map(x => `<tr><th>${x.stratum}</th><td>${x.size}</td><td>${x.drawn}</td><td>${x.labeled}</td><td>${x.unsure}</td><td>${x.labeled ? x.weight.toFixed(2) : '–'}</td></tr>`).join('')
@@ -156,7 +156,7 @@ export function labelingView(): string {
   return `
 <div id="labeling-view" hidden>
   <h1>Blind importance labeling</h1>
-  <p class="muted">For each article, how important is it for you? Nothing here shows what notjev or the reference answered. Your choices stay in this browser until you export them; then set <code>labelsFile</code> in scripts/notjev-bench.config.json (with <code>runDir</code> set to this run) and run the bench again: the report is recomputed without any call.</p>
+  <p class="muted">For each article, how important is it for you? Nothing here shows what notjev or the reference answered. Your choices stay in this browser until you export them; then press <b>Import labels</b> next to this run in Settings → Classification → Accuracy bench (or set <code>labelsFile</code> in scripts/notjev-bench.config.json, with <code>runDir</code> set to this run, and run the bench again): the report is recomputed without any call.</p>
   <div class="toolbar">
     <span id="lab-count" class="muted"></span>
     <select id="lab-show"><option value="">all</option><option value="todo">not labeled</option><option value="done">labeled</option></select>

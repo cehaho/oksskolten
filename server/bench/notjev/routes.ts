@@ -9,7 +9,7 @@ import { parseOrBadRequest } from '../../lib/validation.js'
 import { logger } from '../../logger.js'
 import { FILES, PROJECT_ROOT, RUN_ID_RE, loadConfig, newRunId, outputDir } from './config.js'
 import { readLock } from './lock.js'
-import type { ProgressFile, SampleFile } from './types.js'
+import { IMPORTANCE_LABELS, type ImportanceLabel, type ProgressFile, type SampleFile } from './types.js'
 
 /**
  * Settings → Classification → accuracy bench: start, resume or stop a run and
@@ -36,6 +36,7 @@ export interface BenchRunSummary {
   progress: ProgressFile | null
   hasReport: boolean
   arbitrations: number
+  labels: number
 }
 
 function runDirOf(id: string): string | null {
@@ -68,6 +69,7 @@ function listRuns(): BenchRunSummary[] {
       const progress = readJson<ProgressFile>(path.join(runDir, FILES.progress))
       const sample = readJson<SampleFile>(path.join(runDir, FILES.sample))
       const arb = readJson<{ items?: Record<string, string> }>(path.join(runDir, FILES.arbitrations))
+      const labels = readJson<{ items?: Record<string, string> }>(path.join(runDir, FILES.labels))
       const running = childRun === id || locked === id
       return {
         id,
@@ -78,6 +80,7 @@ function listRuns(): BenchRunSummary[] {
         progress: progress && progress.status === 'running' && !running ? { ...progress, status: 'stopped' } : progress,
         hasReport: fs.existsSync(path.join(runDir, FILES.report)),
         arbitrations: Object.keys(arb?.items ?? {}).length,
+        labels: Object.keys(labels?.items ?? {}).length,
       }
     })
 }
@@ -125,6 +128,12 @@ const ArbitrationsBody = z.object({
   run: z.string().optional(),
   items: z.record(z.string(), z.enum(['notjev', 'reference', 'neither'])),
 })
+const LabelsBody = z.object({
+  version: z.literal(1).optional(),
+  run: z.string().optional(),
+  // Keyed by article id, as the labeling page exports them
+  items: z.record(z.string().regex(/^\d+$/), z.enum(IMPORTANCE_LABELS as [ImportanceLabel, ...ImportanceLabel[]])),
+})
 
 export async function notjevBenchRoutes(api: FastifyInstance): Promise<void> {
   api.get('/api/classification/bench', async (_request, reply) => {
@@ -164,6 +173,21 @@ export async function notjevBenchRoutes(api: FastifyInstance): Promise<void> {
     fs.writeFileSync(file, JSON.stringify({ version: 1, run: request.params.id, items: body.items }, null, 1))
     start(request.params.id, { NOTJEV_BENCH_ARBITRATIONS: file })
     reply.send({ id: request.params.id, arbitrations: Object.keys(body.items).length })
+  })
+
+  // Blind importance labels exported from the report's labeling page: same flow as arbitrations
+  api.post<{ Params: { id: string } }>('/api/classification/bench/runs/:id/labels', { preHandler: [requireJson] }, async (request, reply) => {
+    const runDir = runDirOf(request.params.id)
+    if (!runDir || !fs.existsSync(path.join(runDir, FILES.sample))) {
+      reply.status(404).send({ error: 'Unknown run' })
+      return
+    }
+    const body = parseOrBadRequest(LabelsBody, request.body, reply)
+    if (!body || busy(reply)) return
+    const file = path.join(runDir, FILES.labels)
+    fs.writeFileSync(file, JSON.stringify({ version: 1, run: request.params.id, items: body.items }, null, 1))
+    start(request.params.id, { NOTJEV_BENCH_LABELS: file })
+    reply.send({ id: request.params.id, labels: Object.keys(body.items).length })
   })
 
   api.post('/api/classification/bench/stop', async (_request, reply) => {

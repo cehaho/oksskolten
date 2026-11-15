@@ -99,6 +99,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): BenchConfig {
   if (env.NOTJEV_BENCH_RUN_DIR) cfg.runDir = env.NOTJEV_BENCH_RUN_DIR
   if (env.NOTJEV_BENCH_TRIAL) cfg.trial = env.NOTJEV_BENCH_TRIAL === '1'
   if (env.NOTJEV_BENCH_ARBITRATIONS) cfg.arbitrationsFile = env.NOTJEV_BENCH_ARBITRATIONS
+  if (env.NOTJEV_BENCH_LABELS) cfg.labelsFile = env.NOTJEV_BENCH_LABELS
   cfg.concurrency = Math.max(1, Math.floor(cfg.concurrency))
   return cfg
 }
