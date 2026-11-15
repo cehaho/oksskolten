@@ -69,6 +69,8 @@ const feeds: FeedWithCounts[] = [
 ]
 
 vi.mock('swr', () => ({
+  // use-feed-bulk-actions imports the global mutate
+  mutate: vi.fn(),
   default: (key: string) => {
     if (key === '/api/categories') {
       return { data: { categories: [{ id: 1, name: 'Tech', sort_order: 0, collapsed: 0, created_at: '' }] }, mutate: vi.fn(), isLoading: false }
