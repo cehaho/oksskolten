@@ -85,7 +85,7 @@ Everything below was added on top of upstream before the two projects diverged; 
 ### Reading experience
 
 - **Front page (La Une)** — `/` is a newspaper-style front page: a hero article picked by score, then the top unread articles of each category. The chat-first home screen it replaces is still there, at `/chat`
-- **Journal** — press a button to get one sourced synthesis per theme of everything that arrived since the previous edition, written by your summary model, with the three essentials on top. Steer each theme with a free-text instruction and *more / less like this* votes; covered articles are marked read, starred GitHub releases stay apart. See [`92_feature_journal.md`](docs/spec/92_feature_journal.md)
+- **Journal** — press a button to get one sourced synthesis per theme of everything that arrived since the previous edition, written by your summary model, with the three essentials on top. Steer each theme with a free-text instruction and *more / less like this* votes; covered articles are marked read, starred GitHub releases stay apart. See [`89_feature_journal.md`](docs/spec/89_feature_journal.md)
 - **Simple mode** — on by default: the journal is the home page and the sidebar keeps only search, bookmarks, clips, GitHub releases and themes. Everything else stays reachable by URL, and one switch in Settings → Reading brings the full navigation back
 - **Category tabs** — a horizontal section bar above article lists (Inbox plus one tab per category, with per-category unread counts)
 - **Bottom tab bar** — newspaper-app-style bottom navigation (Inbox, Search, Read Later, Chat, Menu), shown when the sidebar is closed. The sidebar's collapsed state now persists across reloads
