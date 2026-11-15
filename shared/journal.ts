@@ -1,7 +1,7 @@
 /**
  * Journal: an on-demand, sourced digest of everything that arrived since the
  * previous edition, one synthesis per article theme. See
- * docs/spec/92_feature_journal.md.
+ * docs/spec/89_feature_journal.md.
  */
 
 /** Theme key of the bucket holding articles without a theme */

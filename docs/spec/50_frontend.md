@@ -48,7 +48,7 @@ A reading preference (`reading.simple_mode`, Settings → Reading, on by default
 | Section bar above lists | — | the whole bar (themes are in the sidebar) |
 
 - **GitHub Releases**: each enabled starred-releases feed (`rss_url` `https://github.com/stars/<user>`, whatever form of the URL was pasted, see [86](./86_feature_github_releases.md)) gets its own sidebar entry with its unread count, since the feed list that would otherwise show it is hidden.
-- **Home page**: `/` redirects to `/journal` ([92](./92_feature_journal.md)) instead of showing the front page.
+- **Home page**: `/` redirects to `/journal` ([89](./89_feature_journal.md)) instead of showing the front page.
 - **Feed list fallback**: the feed list is hidden only while article classification is on. Without themes the sidebar would offer nothing to read, so the feed list stays.
 
 ### Command Palette & Keyboard Shortcuts
