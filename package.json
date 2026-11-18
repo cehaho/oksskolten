@@ -19,6 +19,7 @@
     "test": "mise exec node@22 -- vitest run",
     "test:watch": "mise exec node@22 -- vitest",
     "test:e2e": "npm run build && playwright test",
+    "audit:journal": "tsx --env-file-if-exists=.env scripts/audit-journal.ts",
     "bench:notjev": "tsx --env-file-if-exists=.env server/bench/notjev/run.ts"
   },
   "dependencies": {
