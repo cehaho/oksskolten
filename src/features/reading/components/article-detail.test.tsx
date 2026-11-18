@@ -152,7 +152,7 @@ describe('ArticleDetail bookmark', () => {
   it('updates the bookmark button immediately after click', async () => {
     render(
       <MemoryRouter>
-        <LocaleContext.Provider value={{ locale: 'ja', setLocale: vi.fn() }}>
+        <LocaleContext.Provider value={{ locale: 'fr', setLocale: vi.fn() }}>
           <TooltipProvider>
             <SWRConfig value={{ provider: () => new Map(), fallback: { [articleKey]: article } }}>
               <Routes>
@@ -219,7 +219,7 @@ describe('ArticleDetail like', () => {
   it('updates the like button immediately after click', async () => {
     render(
       <MemoryRouter>
-        <LocaleContext.Provider value={{ locale: 'ja', setLocale: vi.fn() }}>
+        <LocaleContext.Provider value={{ locale: 'fr', setLocale: vi.fn() }}>
           <TooltipProvider>
             <SWRConfig value={{ provider: () => new Map(), fallback: { [articleKey]: article } }}>
               <Routes>
@@ -275,8 +275,8 @@ describe('ArticleDetail stale translation filtering', () => {
       lang: 'fr',
       summary: null,
       full_text: 'Contenu français',
-      full_text_translated: '古い日本語訳',
-      translated_lang: 'ja',
+      full_text_translated: 'Ancienne traduction française',
+      translated_lang: 'fr',
       seen_at: '2026-03-04T00:00:00.000Z',
       read_at: '2026-03-04T00:00:00.000Z',
       bookmarked_at: null,
@@ -299,7 +299,7 @@ describe('ArticleDetail stale translation filtering', () => {
       </MemoryRouter>,
     )
 
-    // translated_lang='ja' but locale='en' → stale, should pass null
+    // translated_lang='fr' but locale='en' → stale, should pass null
     expect(mockUseTranslate).toHaveBeenCalled()
     const firstArg = mockUseTranslate.mock.calls[0]![0]
     expect(firstArg).toEqual({ id: 1, full_text_translated: null })
@@ -317,7 +317,7 @@ describe('ArticleDetail stale translation filtering', () => {
       summary: null,
       full_text: 'Contenu français',
       full_text_translated: '日本語訳',
-      translated_lang: 'ja',
+      translated_lang: 'fr',
       seen_at: '2026-03-04T00:00:00.000Z',
       read_at: '2026-03-04T00:00:00.000Z',
       bookmarked_at: null,
@@ -326,7 +326,7 @@ describe('ArticleDetail stale translation filtering', () => {
 
     render(
       <MemoryRouter>
-        <LocaleContext.Provider value={{ locale: 'ja', setLocale: vi.fn() }}>
+        <LocaleContext.Provider value={{ locale: 'fr', setLocale: vi.fn() }}>
           <TooltipProvider>
             <SWRConfig value={{ provider: () => new Map(), fallback: { [articleKey]: article } }}>
               <Routes>
@@ -340,7 +340,7 @@ describe('ArticleDetail stale translation filtering', () => {
       </MemoryRouter>,
     )
 
-    // translated_lang='ja' and locale='ja' → current, should pass the translation
+    // translated_lang='fr' and locale='fr' → current, should pass the translation
     expect(mockUseTranslate).toHaveBeenCalled()
     const firstArg = mockUseTranslate.mock.calls[0]![0]
     expect(firstArg).toEqual({ id: 1, full_text_translated: '日本語訳' })
@@ -367,7 +367,7 @@ describe('ArticleDetail stale translation filtering', () => {
 
     render(
       <MemoryRouter>
-        <LocaleContext.Provider value={{ locale: 'ja', setLocale: vi.fn() }}>
+        <LocaleContext.Provider value={{ locale: 'fr', setLocale: vi.fn() }}>
           <TooltipProvider>
             <SWRConfig value={{ provider: () => new Map(), fallback: { [articleKey]: article } }}>
               <Routes>
@@ -423,7 +423,7 @@ describe('ArticleDetail title translation', () => {
   function renderWithArticle(article: typeof baseArticle) {
     render(
       <MemoryRouter>
-        <LocaleContext.Provider value={{ locale: 'ja', setLocale: vi.fn() }}>
+        <LocaleContext.Provider value={{ locale: 'fr', setLocale: vi.fn() }}>
           <TooltipProvider>
             <SWRConfig value={{ provider: () => new Map(), fallback: { [articleKey]: article } }}>
               <Routes>
@@ -468,7 +468,7 @@ describe('ArticleDetail title translation', () => {
       error: null,
     })
 
-    renderWithArticle({ ...baseArticle, full_text_translated: 'Corps traduit', translated_lang: 'ja' })
+    renderWithArticle({ ...baseArticle, full_text_translated: 'Corps traduit', translated_lang: 'fr' })
 
     expect(screen.getByText('Original Title')).toBeTruthy()
     expect(screen.queryByText('Titre traduit')).toBeNull()
@@ -486,7 +486,7 @@ describe('ArticleDetail title translation', () => {
       error: null,
     })
 
-    renderWithArticle({ ...baseArticle, full_text_translated: 'Corps traduit', translated_lang: 'ja' })
+    renderWithArticle({ ...baseArticle, full_text_translated: 'Corps traduit', translated_lang: 'fr' })
 
     expect(screen.getByText('Titre traduit')).toBeTruthy()
     expect(screen.queryByText('Original Title')).toBeNull()
@@ -558,7 +558,7 @@ describe('ArticleDetail empty body recovery', () => {
   function renderCached(article: typeof baseArticle) {
     render(
       <MemoryRouter>
-        <LocaleContext.Provider value={{ locale: 'ja', setLocale: vi.fn() }}>
+        <LocaleContext.Provider value={{ locale: 'fr', setLocale: vi.fn() }}>
           <TooltipProvider>
             <SWRConfig
               value={{
