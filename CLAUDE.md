@@ -4,7 +4,7 @@ See `README.md` for project overview and `docs/spec/` for detailed specs.
 
 ## Deployment
 
-The production instance runs directly on the host (Node + `npm start`), **not in Docker**. Run scripts there from the project directory with `npm run <script>`; do not suggest `docker` / `docker compose` commands for it.
+The production instance runs directly on the host, **not in Docker**: systemd unit `oksskolten.service`, project in `/opt/oksskolten` (tsx `server/index.ts`). Run scripts there from the project directory with `npm run <script>`; do not suggest `docker` / `docker compose` commands for it.
 
 ## Database
 
