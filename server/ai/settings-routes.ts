@@ -115,7 +115,7 @@ export async function aiSettingsRoutes(api: FastifyInstance): Promise<void> {
 
   async function vllmFetch(path: string): Promise<Response> {
     const { getVllmBaseUrl, getVllmApiKey } = await import('./providers/llm/vllm.js')
-    const baseUrl = getVllmBaseUrl().replace(/\/+$/, '')
+    const baseUrl = getVllmBaseUrl()
     const apiKey = getVllmApiKey()
     const headers: Record<string, string> = {}
     if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`

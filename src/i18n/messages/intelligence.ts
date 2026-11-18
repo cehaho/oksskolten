@@ -63,9 +63,9 @@ export const intelligence = {
 
   'classification.title': { ja: '記事の分類', en: 'Article classification', zh: '文章分类'},
   'classification.desc': {
-    ja: 'ローカルの vLLM サーバーが各記事に形式（ニュース、質問、ガイド…）とテーマを付けます。1 トークンの判定で、迷ったときは未分類のままにします。',
-    en: 'Your local vLLM server gives every article a format (news, question, guide…) and a theme. One token per decision; when the model hesitates the article stays unclassified.',
-    zh: '本地 vLLM 服务器为每篇文章标注形式（新闻、提问、指南…）和主题。每次判定只读一个 token，模型犹豫时文章保持未分类。',
+    ja: 'OpenAI 互換サーバーが各記事に形式（ニュース、質問、ガイド…）とテーマを付けます。1 トークンの判定で、迷ったときは未分類のままにします。',
+    en: 'Your OpenAI-compatible server gives every article a format (news, question, guide…) and a theme. One token per decision; when the model hesitates the article stays unclassified.',
+    zh: 'OpenAI 兼容服务器为每篇文章标注形式（新闻、提问、指南…）和主题。每次判定只读一个 token，模型犹豫时文章保持未分类。',
   },
   'classification.formats': { ja: '形式', en: 'Formats', zh: '形式'},
   'classification.themes': { ja: 'テーマ', en: 'Themes', zh: '主题'},
@@ -76,7 +76,7 @@ export const intelligence = {
     zh: '侧边栏不再按文件夹显示订阅源，文章列表上方的标签栏显示主题而非分类。分类会保留，仍可在 设置 → 订阅源 中管理。',
   },
   'classification.model': { ja: 'モデル', en: 'Model', zh: '模型'},
-  'classification.modelDesc': { ja: 'vLLM サーバー上のモデル名。logprobs を返す instruct モデルが必要です。', en: 'Model name on the vLLM server. It must be an instruct model that returns logprobs.', zh: 'vLLM 服务器上的模型名称，需为可返回 logprobs 的 instruct 模型。'},
+  'classification.modelDesc': { ja: 'OpenAI 互換サーバー上のモデル名。logprobs を返す instruct モデルが必要です。', en: 'Model name on the OpenAI-compatible server. It must be an instruct model that returns logprobs.', zh: 'OpenAI 兼容服务器上的模型名称，需为可返回 logprobs 的 instruct 模型。'},
   'classification.modelPlaceholder': { ja: '要約のモデルを使用', en: 'Same as the summary model', zh: '与摘要模型相同'},
   'classification.thresholds': { ja: '確信度のしきい値', en: 'Confidence thresholds', zh: '置信度阈值'},
   'classification.thresholdsDesc': { ja: '上位 2 つの選択肢の差がこの値未満なら未分類にします（0〜1）。', en: 'Below this margin between the two best options the article stays unclassified (0 to 1).', zh: '前两个选项的差距低于此值时，文章保持未分类（0 到 1）。'},

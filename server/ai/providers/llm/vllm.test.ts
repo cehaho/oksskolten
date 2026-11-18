@@ -47,6 +47,18 @@ describe('vllmProvider', () => {
     expect(getVllmBaseUrl()).toBe('http://localhost:8000')
   })
 
+  it.each([
+    ['http://llama-swap:8090/v1', 'http://llama-swap:8090'],
+    ['http://llama-swap:8090/v1/', 'http://llama-swap:8090'],
+    ['  http://llama-swap:8090/V1  ', 'http://llama-swap:8090'],
+    ['http://llama-swap:8090/', 'http://llama-swap:8090'],
+    ['http://proxy/llm/v1', 'http://proxy/llm'],
+    ['http://proxy/v1beta', 'http://proxy/v1beta'],
+  ])('normalizes base URL %j to the server root', (entered, expected) => {
+    vi.mocked(db.getSetting).mockImplementation((key) => key === 'vllm.base_url' ? entered : undefined)
+    expect(getVllmBaseUrl()).toBe(expected)
+  })
+
   it('gets API key from settings', () => {
     vi.mocked(db.getSetting).mockImplementation((key) => {
       if (key === 'api_key.vllm') return 'vllm-key'

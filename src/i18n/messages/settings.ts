@@ -75,9 +75,9 @@ export const settings = {
   'settings.autoMarkReadOff': { ja: 'オフ', en: 'Off', zh: '关'},
   'settings.autoTranslate': { ja: '自動翻訳', en: 'Auto-Translation', zh: '自动翻译'},
   'settings.autoTranslateDesc': {
-    ja: '外国語の記事を取得時に自動的に翻訳します（vLLMローカルサーバーが必要）',
-    en: 'Automatically translate non-target-language articles on fetch (requires local vLLM server)',
-    zh: '获取文章时自动翻译非目标语言的文章（需要本地 vLLM 服务器）'
+    ja: '外国語の記事を取得時に自動的に翻訳します（OpenAI 互換サーバーが必要）',
+    en: 'Automatically translate non-target-language articles on fetch (requires an OpenAI-compatible server)',
+    zh: '获取文章时自动翻译非目标语言的文章（需要 OpenAI 兼容服务器）'
   },
   'settings.autoTranslateOn': { ja: 'オン', en: 'On', zh: '开'},
   'settings.autoTranslateOff': { ja: 'オフ', en: 'Off', zh: '关'},
@@ -91,9 +91,9 @@ export const settings = {
   'settings.autoTranslateScopeTitles': { ja: 'タイトルのみ', en: 'Titles only', zh: '仅标题'},
   'settings.autoSummarize': { ja: '自動要約', en: 'Auto-Summarize', zh: '自动摘要'},
   'settings.autoSummarizeDesc': {
-    ja: '記事を取得時に自動的に要約します（vLLMローカルサーバーが必要）',
-    en: 'Automatically summarize articles on fetch (requires local vLLM server)',
-    zh: '获取文章时自动生成摘要（需要本地 vLLM 服务器）'
+    ja: '記事を取得時に自動的に要約します（OpenAI 互換サーバーが必要）',
+    en: 'Automatically summarize articles on fetch (requires an OpenAI-compatible server)',
+    zh: '获取文章时自动生成摘要（需要 OpenAI 兼容服务器）'
   },
   'settings.autoSummarizeOn': { ja: 'オン', en: 'On', zh: '开'},
   'settings.autoSummarizeOff': { ja: 'オフ', en: 'Off', zh: '关'},
@@ -469,7 +469,7 @@ export const settings = {
   'provider.openai': { ja: 'OpenAI API', en: 'OpenAI API', zh: 'OpenAI API'},
   'provider.claudeCode': { ja: 'Claude Code', en: 'Claude Code', zh: 'Claude Code'},
   'provider.ollama': { ja: 'Ollama', en: 'Ollama', zh: 'Ollama'},
-  'provider.vllm': { ja: 'vLLM', en: 'vLLM', zh: 'vLLM'},
+  'provider.vllm': { ja: 'OpenAI 互換', en: 'OpenAI-compatible', zh: 'OpenAI 兼容'},
   'provider.googleTranslate': { ja: 'Google Translate', en: 'Google Translate', zh: 'Google 翻译'},
   'provider.deepl': { ja: 'DeepL', en: 'DeepL', zh: 'DeepL'},
   'ollama.baseUrl': { ja: 'Ollama サーバー URL', en: 'Ollama Server URL', zh: 'Ollama 服务器 URL'},
@@ -488,18 +488,18 @@ export const settings = {
   'ollama.addHeader': { ja: '追加', en: 'Add', zh: '添加'},
   'ollama.headersSaved': { ja: 'カスタムヘッダーを保存しました', en: 'Custom headers saved', zh: '自定义请求头已保存'},
 
-  // vLLM
-  'vllm.baseUrl': { ja: 'vLLM サーバー URL', en: 'vLLM Server URL', zh: 'vLLM 服务器 URL'},
-  'vllm.baseUrlDesc': { ja: 'vLLM サーバーのアドレスを設定', en: 'Set the vLLM server address', zh: '设置 vLLM 服务器地址'},
-  'vllm.baseUrlPlaceholder': { ja: 'http://localhost:8000', en: 'http://localhost:8000', zh: 'http://localhost:8000'},
-  'vllm.baseUrlSaved': { ja: 'vLLM サーバー URL を保存しました', en: 'vLLM server URL saved', zh: 'vLLM 服务器 URL 已保存'},
+  // OpenAI-compatible server (internal id: vllm)
+  'vllm.baseUrl': { ja: 'サーバー URL', en: 'Server URL', zh: '服务器 URL'},
+  'vllm.baseUrlDesc': { ja: 'OpenAI 互換サーバー（vLLM、llama-swap、llama.cpp など）のアドレス。/v1 は付けても付けなくても構いません', en: 'Address of an OpenAI-compatible server (vLLM, llama-swap, llama.cpp…), with or without /v1', zh: 'OpenAI 兼容服务器（vLLM、llama-swap、llama.cpp 等）的地址，可带或不带 /v1'},
+  'vllm.baseUrlPlaceholder': { ja: 'http://localhost:8000/v1', en: 'http://localhost:8000/v1', zh: 'http://localhost:8000/v1'},
+  'vllm.baseUrlSaved': { ja: 'サーバー URL を保存しました', en: 'Server URL saved', zh: '服务器 URL 已保存'},
   'vllm.testConnection': { ja: '接続テスト', en: 'Test Connection', zh: '测试连接'},
   'vllm.testing': { ja: 'テスト中...', en: 'Testing...', zh: '测试中...'},
   'vllm.connected': { ja: '接続成功', en: 'Connected', zh: '已连接'},
   'vllm.connectionFailed': { ja: '接続失敗', en: 'Connection failed', zh: '连接失败'},
-  'vllm.noModels': { ja: 'vLLM に接続できません', en: 'Cannot connect to vLLM', zh: '无法连接 vLLM'},
-  'vllm.apiKeySaved': { ja: 'vLLM API キーを保存しました', en: 'vLLM API key saved', zh: 'vLLM API 密钥已保存'},
-  'vllm.apiKeyDeleted': { ja: 'vLLM API キーを削除しました', en: 'vLLM API key deleted', zh: 'vLLM API 密钥已删除'},
+  'vllm.noModels': { ja: 'サーバーに接続できません', en: 'Cannot connect to the server', zh: '无法连接服务器'},
+  'vllm.apiKeySaved': { ja: 'API キーを保存しました', en: 'API key saved', zh: 'API 密钥已保存'},
+  'vllm.apiKeyDeleted': { ja: 'API キーを削除しました', en: 'API key deleted', zh: 'API 密钥已删除'},
   'github.sectionTitle': { ja: 'GitHub リリース', en: 'GitHub Releases', zh: 'GitHub 发布'},
   'github.sectionDesc': {
     ja: 'スター済みのすべてのリポジトリのリリースを1つのフィードとして受け取ります',

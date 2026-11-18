@@ -16,7 +16,7 @@ Formats and themes show up in the sidebar with their unread counts (`/formats/:i
 
 ## Scope
 
-- The vLLM provider settings only (base URL and API key): any OpenAI-compatible server that returns logprobs on `/v1/chat/completions` works (vLLM, llama.cpp `llama-server`). The model must be an instruct model, not a thinking one.
+- The OpenAI-compatible provider settings only (internal id `vllm`; base URL and API key): any OpenAI-compatible server that returns logprobs on `/v1/chat/completions` works (vLLM, llama-swap, llama.cpp `llama-server`). The base URL may be entered with or without `/v1`: `getVllmBaseUrl()` strips a trailing slash and `/v1`, and every caller appends the OpenAI path itself. The model must be an instruct model, not a thinking one.
 - One format and one theme per article. Multi-label tagging is out of scope.
 - Feed categories stay in the database, the OPML export and Settings → Feeds. With `classify.hide_categories` on (the default once classification is enabled), the reading UI shows themes where it showed categories; turning it off brings the folders back unchanged.
 
