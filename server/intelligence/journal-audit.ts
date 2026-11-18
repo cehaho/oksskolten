@@ -24,7 +24,6 @@ export type MissReason =
   | 'uncited'       // read by the model, not cited
   | 'filtered'      // removed by a filter rule, never in the edition
   | 'too-old'       // published long before the period
-  | 'excluded-feed' // clip or starred-releases feed
 
 export interface MissedArticle {
   article: AuditArticle
@@ -70,15 +69,23 @@ const FOLDED_STOPWORDS = new Set([...STOPWORDS].map(normalize))
 
 /**
  * Terms that name what a passage is about: capitalized words and words with
- * digits (product names, versions). Plain numbers are left out, their
- * formatting differs too much between a summary and its source.
+ * digits (product names, versions). The first word of a sentence is only
+ * kept when it has a digit or an inner capital ("OVHcloud"): otherwise its
+ * capital says nothing ("Enfin", "Toutefois"). Plain numbers are left out,
+ * their formatting differs too much between a summary and its source.
  */
 export function keyTerms(text: string): string[] {
   const terms: string[] = []
-  for (const raw of text.split(/[^\p{L}\p{N}.\-]+/u)) {
-    const word = raw.replace(/^[.\-]+|[.\-]+$/g, '')
+  let sentenceStart = true
+  for (const raw of text.split(/[^\p{L}\p{N}.!?…\-]+/u)) {
+    const word = raw.replace(/^[.!?…\-]+|[.!?…\-]+$/g, '')
+    const first = sentenceStart
+    if (word) sentenceStart = false
+    if (/[.!?…]$/.test(raw)) sentenceStart = true
     if (!word || /^[\d.\-]+$/.test(word)) continue
-    const named = /^\p{Lu}/u.test(word) || /\d/.test(word)
+    const named = first
+      ? /\d/.test(word) || /.\p{Lu}/u.test(word)
+      : /^\p{Lu}/u.test(word) || /\d/.test(word)
     if (!named || word.length < 3) continue
     const term = normalize(word)
     if (FOLDED_STOPWORDS.has(term) || terms.includes(term)) continue
@@ -152,8 +159,8 @@ export function auditEdition(input: {
   content: JournalContent
   /** Every article the edition covered */
   articles: AuditArticle[]
-  /** Articles that arrived in the period but were kept out of the edition */
-  outOfScope: { article: AuditArticle; reason: 'filtered' | 'too-old' | 'excluded-feed' }[]
+  /** Articles that arrived in the period but were kept out of the edition (excluded feeds aside) */
+  outOfScope: { article: AuditArticle; reason: 'filtered' | 'too-old' }[]
 }): JournalAudit {
   const { content } = input
   const byId = new Map(input.articles.map(a => [a.id, a]))
@@ -209,7 +216,6 @@ const REASON_LABELS: Record<MissReason, string> = {
   uncited: 'read by the model, not cited',
   filtered: 'removed by a filter rule',
   'too-old': 'published too long before the period',
-  'excluded-feed': 'feed excluded from the journal',
 }
 
 function cell(text: string): string {

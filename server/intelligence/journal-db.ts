@@ -18,7 +18,7 @@ const STALE_RUNNING_MINUTES = 30
  * their own. A stars feed keeps its canonical URL in rss_url; url holds
  * whatever was pasted, `github.com/<user>?tab=stars` included.
  */
-const EXCLUDED_FEEDS_SQL = `f.type != 'clip'
+export const EXCLUDED_FEEDS_SQL = `f.type != 'clip'
   AND COALESCE(f.rss_url, '') NOT LIKE 'https://github.com/stars/%'
   AND f.url NOT LIKE 'https://github.com/stars/%'`
 

@@ -2,6 +2,10 @@
 
 See `README.md` for project overview and `docs/spec/` for detailed specs.
 
+## Deployment
+
+The production instance runs directly on the host, **not in Docker**: systemd unit `oksskolten.service`, project in `/opt/oksskolten` (tsx `server/index.ts`). Run scripts there from the project directory with `npm run <script>`; do not suggest `docker` / `docker compose` commands for it.
+
 ## Database
 
 SQLite (libsql, WAL mode) at `./data/rss.db`.

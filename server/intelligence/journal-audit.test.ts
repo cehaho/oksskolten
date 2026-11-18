@@ -9,7 +9,12 @@ function article(id: number, title: string, extra: Partial<AuditArticle> = {}): 
 
 describe('keyTerms', () => {
   it('keeps capitalized and versioned words, drops stopwords and plain numbers', () => {
-    expect(keyTerms('Moonshot AI a publié les poids de Kimi K3.1 Pro, un modèle de 2 800 milliards. Sur le front')).toEqual(['moonshot', 'kimi', 'k3.1', 'pro'])
+    expect(keyTerms('Le groupe Moonshot AI a publié les poids de Kimi K3.1 Pro, un modèle de 2 800 milliards. Sur le front')).toEqual(['moonshot', 'kimi', 'k3.1', 'pro'])
+  })
+
+  it('ignores the capital of a sentence\'s first word, unless the word is a name', () => {
+    expect(keyTerms('Enfin, l\'efficacité demeure centrale. Toutefois, les bornes tombent en panne')).toEqual([])
+    expect(keyTerms('OVHcloud a révélé Olala mini. Qwen4 arrive')).toEqual(['ovhcloud', 'olala', 'qwen4'])
   })
 })
 
@@ -58,7 +63,7 @@ describe('auditEdition', () => {
 
   it('flags a citation whose passage names terms absent from the article', () => {
     expect(audit.suspects).toHaveLength(1)
-    expect(audit.suspects[0]).toMatchObject({ n: 1, terms: ['moonshot', 'kimi', 'k3.1', 'pro'] })
+    expect(audit.suspects[0]).toMatchObject({ n: 1, terms: ['kimi', 'k3.1', 'pro'] })
   })
 
   it('lists important articles left out, with the reason', () => {

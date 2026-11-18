@@ -23,7 +23,7 @@ describe('journal audit queries', () => {
     expect(Object.fromEntries(out.map(o => [o.article.id, o.reason]))).toEqual({
       [filtered]: 'filtered',
       [old]: 'too-old',
-      [clip]: 'excluded-feed',
     })
+    expect(out.map(o => o.article.id)).not.toContain(clip)
   })
 })
