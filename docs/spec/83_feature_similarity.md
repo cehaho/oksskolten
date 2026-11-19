@@ -127,6 +127,28 @@ Sorted by similarity score descending.
 
 **Article list**: A small `Layers` icon appears after the date in the article metadata row when `similar_count > 0`.
 
+### Embedding server settings
+
+Title matching misses two reports of the same news worded differently, or written in two languages. The next step compares embeddings (vectors standing for the meaning of a text) instead; for now only the settings and a connection test exist, and nothing computes or stores a vector.
+
+Settings → AI & translation → Embeddings, stored in `settings`:
+
+| Key | Default | Description |
+|-----|---------|-------------|
+| `embeddings.base_url` | empty | OpenAI-compatible server, with or without `/v1`; empty uses `vllm.base_url` |
+| `api_key.embeddings` | empty | Bearer key; empty uses `api_key.vllm` |
+| `embeddings.model` | empty | Model name on that server (e.g. `bge-m3`); empty turns embeddings off |
+| `embeddings.dimensions` | `1024` | Expected vector size, an integer from 1 to 8192 |
+
+The fallbacks let one llama-swap serve both the chat model and the embedding model without a second URL or key. `server/ai/providers/embeddings.ts` resolves them (`getEmbeddingsServer()`, `getEmbeddingsConfig()`, null without a model) and `embed(texts)` posts `{ model, input }` to `/v1/embeddings`, returning one vector per text in input order (rows are sorted by their `index`). It does not check the vector size; callers compare it with `dimensions` where a mismatch matters.
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /api/settings/embeddings/models` | `/v1/models` of the embeddings server, for the model field's suggestions |
+| `GET /api/settings/embeddings/status` | Embeds one short text with the saved settings: `{ ok, dimensions, expected, ms }`, or `{ ok: false, error }` (`EMBEDDINGS_NOT_CONFIGURED` without a model) |
+
+The settings card flags a size mismatch from the test, since vectors of the wrong size could not be compared with stored ones.
+
 ### Key Files
 
 | File | Purpose |
@@ -139,3 +161,4 @@ Sorted by similarity score descending.
 | `server/routes/articles.ts` | Endpoint: GET /api/articles/:id/similar |
 | `server/db/articles.ts` | similar_count subquery in getArticles, getArticleByUrl, getArticleById |
 | `src/components/article/article-similar-banner.tsx` | Frontend banner component |
+| `server/ai/providers/embeddings.ts` | Embeddings server settings and `embed()` client |

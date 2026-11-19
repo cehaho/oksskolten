@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { getSetting, upsertSetting, deleteSetting } from '../db.js'
 import { requireJson } from '../auth/index.js'
 import { PREF_KEYS, PREF_ALLOWED, PROVIDER_MODEL_PAIRS, validateProviderModel } from './preferences.js'
+import { MAX_EMBEDDING_DIMENSIONS } from '../ai/providers/embeddings.js'
 
 export async function preferencesRoutes(api: FastifyInstance): Promise<void> {
   // --- Preferences endpoints ---
@@ -92,6 +93,13 @@ export async function preferencesRoutes(api: FastifyInstance): Promise<void> {
         const parsed = z.coerce.number().int().min(1).max(5).safeParse(value)
         if (!parsed.success) {
           reply.status(400).send({ error: `${key} must be an integer between 1 and 5` })
+          return
+        }
+      }
+      if (key === 'embeddings.dimensions') {
+        const parsed = z.coerce.number().int().min(1).max(MAX_EMBEDDING_DIMENSIONS).safeParse(value)
+        if (!parsed.success) {
+          reply.status(400).send({ error: `${key} must be an integer between 1 and ${MAX_EMBEDDING_DIMENSIONS}` })
           return
         }
       }

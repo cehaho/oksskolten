@@ -69,7 +69,9 @@ Command palette groups:
 - **Feeds** — Dynamic list from SWR, shown only when search input is non-empty (clip feeds excluded)
 - **Appearance** — Theme, layout, and color mode switching
 
-All items include English `keywords` for cross-language matching (e.g., typing "chat" matches the localized label in Japanese locale).
+All items include English `keywords` for cross-language matching (e.g., typing "chat" matches the localized label in French locale).
+
+The interface is offered in French, English and Chinese (`LOCALES` in `src/i18n/index.ts`). The locale comes from `?lang=`, then the stored choice, then the profile language, then the browser language, English otherwise; a stored locale that is no longer offered (Japanese was dropped) falls back the same way. Every dictionary entry must carry all three texts, which the type check enforces.
 
 Global shortcuts are managed by `useGlobalShortcuts` hook in `src/hooks/use-global-shortcuts.ts` and registered in `FeedList`.
 

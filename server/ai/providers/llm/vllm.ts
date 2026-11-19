@@ -6,8 +6,19 @@ let cachedBaseUrl = ''
 let cachedApiKey = ''
 let cachedClient: OpenAI | null = null
 
+/**
+ * The server root, without a trailing slash or `/v1`. Every caller (this
+ * client, the settings routes, notjev) appends the OpenAI path itself, while
+ * OpenAI-compatible servers are usually given as `http://host:port/v1`: kept
+ * as entered, that address would become `/v1/v1`.
+ */
 export function getVllmBaseUrl(): string {
-  return getSetting('vllm.base_url') || process.env.VLLM_BASE_URL || 'http://localhost:8000'
+  return normalizeOpenAiBaseUrl(getSetting('vllm.base_url') || process.env.VLLM_BASE_URL || 'http://localhost:8000')
+}
+
+/** Strip surrounding blanks, trailing slashes and a trailing `/v1` from an OpenAI-compatible server URL */
+export function normalizeOpenAiBaseUrl(url: string): string {
+  return url.trim().replace(/\/+$/, '').replace(/\/v1$/i, '')
 }
 
 export function getVllmApiKey(): string {
@@ -21,7 +32,7 @@ export function getVllmClient(): OpenAI {
   cachedBaseUrl = baseUrl
   cachedApiKey = apiKey
   cachedClient = new OpenAI({
-    baseURL: baseUrl.replace(/\/+$/, '') + '/v1',
+    baseURL: baseUrl + '/v1',
     apiKey: apiKey || 'vllm', // Required by SDK even if not used by vLLM
   })
   return cachedClient
