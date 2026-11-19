@@ -41,6 +41,10 @@ export const PREF_KEYS = [
   'ollama.base_url',
   'ollama.custom_headers',
   'vllm.base_url',
+  // embeddings (OpenAI-compatible server; URL and key fall back to vllm's)
+  'embeddings.base_url',
+  'embeddings.model',
+  'embeddings.dimensions',
   // appearance
   'custom_themes',
   // retention
@@ -95,6 +99,9 @@ export const PREF_ALLOWED: Record<PrefKey, string[] | null> = {
   'ollama.base_url': null,
   'ollama.custom_headers': null,
   'vllm.base_url': null,
+  'embeddings.base_url': null,
+  'embeddings.model': null,
+  'embeddings.dimensions': null,
   // appearance
   'custom_themes': null,
   // retention

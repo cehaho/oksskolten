@@ -25,6 +25,11 @@ export function ProviderConfigSection({ t, settings }: { t: TFunc; settings: Set
         </div>
       </div>
       <div>
+        <h2 className="text-base font-semibold text-text mb-1">{t('embeddings.title')}</h2>
+        <p className="text-xs text-muted mb-4">{t('embeddings.desc')}</p>
+        <EmbeddingsCard t={t} />
+      </div>
+      <div>
         <h2 className="text-base font-semibold text-text mb-1">{t('integration.translateServiceConfig')}</h2>
         <p className="text-xs text-muted mb-4">{t('integration.translateServiceConfigDesc')}</p>
         <div className="space-y-3">
@@ -609,6 +614,234 @@ function VllmCard({ t }: { t: TFunc }) {
               ? `${t('vllm.connected')} (${testResult.model_count} models)`
               : `${t('vllm.connectionFailed')}: ${testResult.error}`}
           </span>
+        )}
+      </div>
+
+      {message && (
+        <p className={`text-xs ${message.type === 'error' ? 'text-error' : 'text-accent'}`}>
+          {message.text}
+        </p>
+      )}
+    </div>
+  )
+}
+
+const DEFAULT_EMBEDDING_DIMENSIONS = '1024'
+
+type EmbeddingsTestResult =
+  | { ok: true; dimensions: number; expected: number; ms: number }
+  | { ok: false; error: string }
+
+/**
+ * Embedding model settings. URL and key are optional: left empty, the server
+ * falls back to the OpenAI-compatible provider's. No model means embeddings are off.
+ */
+function EmbeddingsCard({ t }: { t: TFunc }) {
+  const { data: prefs, mutate: mutatePrefs } = useSWR<Record<string, string | null>>(
+    '/api/settings/preferences',
+    fetcher,
+    { revalidateOnFocus: false },
+  )
+  const { data: keyStatus, mutate: mutateKeyStatus } = useSWR<{ configured: boolean }>(
+    '/api/settings/api-keys/embeddings',
+    fetcher,
+    { revalidateOnFocus: false },
+  )
+  const { data: modelList, mutate: mutateModels } = useSWR<{ models?: Array<{ name: string }> }>(
+    '/api/settings/embeddings/models',
+    fetcher,
+    { revalidateOnFocus: false },
+  )
+
+  const saved = {
+    baseUrl: prefs?.['embeddings.base_url'] || '',
+    model: prefs?.['embeddings.model'] || '',
+    dimensions: prefs?.['embeddings.dimensions'] || DEFAULT_EMBEDDING_DIMENSIONS,
+  }
+  const isKeyConfigured = keyStatus?.configured
+  const models = modelList?.models ?? []
+
+  const [baseUrlInput, setBaseUrlInput] = useState('')
+  const [modelInput, setModelInput] = useState('')
+  const [dimensionsInput, setDimensionsInput] = useState(DEFAULT_EMBEDDING_DIMENSIONS)
+  const [apiKeyInput, setApiKeyInput] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null)
+  const [testing, setTesting] = useState(false)
+  const [testResult, setTestResult] = useState<EmbeddingsTestResult | null>(null)
+
+  // Sync inputs with saved values on first load
+  const [initialized, setInitialized] = useState(false)
+  useEffect(() => {
+    if (!prefs || initialized) return
+    setBaseUrlInput(prefs['embeddings.base_url'] || '')
+    setModelInput(prefs['embeddings.model'] || '')
+    setDimensionsInput(prefs['embeddings.dimensions'] || DEFAULT_EMBEDDING_DIMENSIONS)
+    setInitialized(true)
+  }, [prefs, initialized])
+
+  function showMessage(text: string, type: 'success' | 'error') {
+    setMessage({ text, type })
+    setTimeout(() => setMessage(null), 3000)
+  }
+
+  const handleSave = useCallback(async () => {
+    if (saving) return
+    setSaving(true)
+    try {
+      // The key goes first: the model list below is fetched with it
+      if (apiKeyInput) await apiPost('/api/settings/api-keys/embeddings', { apiKey: apiKeyInput })
+      await apiPatch('/api/settings/preferences', {
+        'embeddings.base_url': baseUrlInput.trim(),
+        'embeddings.model': modelInput.trim(),
+        'embeddings.dimensions': dimensionsInput.trim(),
+      })
+      void mutatePrefs()
+      void mutateKeyStatus()
+      void mutateModels()
+      setApiKeyInput('')
+      setTestResult(null)
+      showMessage(t('embeddings.saved'), 'success')
+    } catch (err: unknown) {
+      showMessage(err instanceof Error ? err.message : 'Save failed', 'error')
+    } finally {
+      setSaving(false)
+    }
+  }, [saving, apiKeyInput, baseUrlInput, modelInput, dimensionsInput, mutatePrefs, mutateKeyStatus, mutateModels, t])
+
+  const handleDeleteKey = useCallback(async () => {
+    if (saving) return
+    setSaving(true)
+    try {
+      await apiPost('/api/settings/api-keys/embeddings', { apiKey: '' })
+      void mutateKeyStatus()
+      showMessage(t('vllm.apiKeyDeleted'), 'success')
+    } catch (err: unknown) {
+      showMessage(err instanceof Error ? err.message : 'Delete failed', 'error')
+    } finally {
+      setSaving(false)
+    }
+  }, [saving, mutateKeyStatus, t])
+
+  const handleTest = useCallback(async () => {
+    if (testing) return
+    setTesting(true)
+    setTestResult(null)
+    try {
+      setTestResult(await fetcher('/api/settings/embeddings/status') as EmbeddingsTestResult)
+    } catch {
+      setTestResult({ ok: false, error: 'Request failed' })
+    } finally {
+      setTesting(false)
+    }
+  }, [testing])
+
+  const hasChanges = baseUrlInput !== saved.baseUrl
+    || modelInput !== saved.model
+    || dimensionsInput !== saved.dimensions
+    || !!apiKeyInput
+
+  function testMessage(r: EmbeddingsTestResult): { text: string; ok: boolean } {
+    if (!r.ok) {
+      return {
+        ok: false,
+        text: r.error === 'EMBEDDINGS_NOT_CONFIGURED' ? t('embeddings.noModel') : `${t('vllm.connectionFailed')}: ${r.error}`,
+      }
+    }
+    if (r.dimensions !== r.expected) {
+      return { ok: false, text: t('embeddings.testMismatch', { actual: String(r.dimensions), expected: String(r.expected) }) }
+    }
+    return { ok: true, text: t('embeddings.testOk', { dimensions: String(r.dimensions), ms: String(r.ms) }) }
+  }
+
+  const status = testResult ? testMessage(testResult) : null
+  const dot = status ? (status.ok ? 'bg-success' : 'bg-error') : saved.model ? 'bg-warning' : 'bg-muted'
+
+  return (
+    <div className="p-3 rounded-lg bg-bg-card border border-border min-h-[3rem] space-y-2">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className={`w-2 h-2 rounded-full shrink-0 ${dot}`} />
+          <span className="text-sm font-medium text-text select-none">{saved.model || t('embeddings.modelNone')}</span>
+        </div>
+        {isKeyConfigured && (
+          <button
+            type="button"
+            onClick={handleDeleteKey}
+            disabled={saving}
+            className="px-3 py-1 text-xs rounded-lg border border-border text-muted hover:text-text hover:bg-hover transition-colors disabled:opacity-50 select-none"
+          >
+            {t('chat.apiKeyDelete')}
+          </button>
+        )}
+      </div>
+
+      <FormField label={t('vllm.baseUrl')} hint={t('embeddings.baseUrlDesc')} compact>
+        <Input
+          type="text"
+          value={baseUrlInput}
+          onChange={e => setBaseUrlInput(e.target.value)}
+          placeholder={t('vllm.baseUrlPlaceholder')}
+          className="py-1.5"
+        />
+      </FormField>
+
+      <FormField label={t('chat.apiKey')} hint={t('embeddings.apiKeyDesc')} compact>
+        <Input
+          type="password"
+          value={apiKeyInput}
+          onChange={e => setApiKeyInput(e.target.value)}
+          placeholder={isKeyConfigured ? '••••••••' : '...'}
+          className="py-1.5"
+        />
+      </FormField>
+
+      <FormField label={t('embeddings.model')} hint={t('embeddings.modelDesc')} compact>
+        <Input
+          type="text"
+          value={modelInput}
+          onChange={e => setModelInput(e.target.value)}
+          placeholder="bge-m3"
+          list="embeddings-models"
+          className="py-1.5"
+        />
+        <datalist id="embeddings-models">
+          {models.map(m => <option key={m.name} value={m.name} />)}
+        </datalist>
+      </FormField>
+
+      <FormField label={t('embeddings.dimensions')} hint={t('embeddings.dimensionsDesc')} compact>
+        <Input
+          type="number"
+          min={1}
+          value={dimensionsInput}
+          onChange={e => setDimensionsInput(e.target.value)}
+          className="py-1.5 w-32"
+        />
+      </FormField>
+
+      <div className="flex items-center gap-2 flex-wrap">
+        {hasChanges && (
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={saving}
+            className="px-3 py-1.5 text-xs font-medium rounded-lg bg-accent text-accent-text hover:opacity-90 transition-opacity disabled:opacity-50 select-none shrink-0"
+          >
+            {saving ? '...' : t('settings.save')}
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={handleTest}
+          disabled={testing || hasChanges}
+          title={hasChanges ? t('embeddings.saveBeforeTest') : undefined}
+          className="px-3 py-1.5 text-xs rounded-lg border border-border text-muted hover:text-text hover:bg-hover transition-colors disabled:opacity-50 select-none"
+        >
+          {testing ? t('vllm.testing') : t('vllm.testConnection')}
+        </button>
+        {status && (
+          <span className={`text-xs ${status.ok ? 'text-accent' : 'text-error'}`}>{status.text}</span>
         )}
       </div>
 

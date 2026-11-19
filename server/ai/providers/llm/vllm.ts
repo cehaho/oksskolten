@@ -13,8 +13,12 @@ let cachedClient: OpenAI | null = null
  * as entered, that address would become `/v1/v1`.
  */
 export function getVllmBaseUrl(): string {
-  const raw = getSetting('vllm.base_url') || process.env.VLLM_BASE_URL || 'http://localhost:8000'
-  return raw.trim().replace(/\/+$/, '').replace(/\/v1$/i, '')
+  return normalizeOpenAiBaseUrl(getSetting('vllm.base_url') || process.env.VLLM_BASE_URL || 'http://localhost:8000')
+}
+
+/** Strip surrounding blanks, trailing slashes and a trailing `/v1` from an OpenAI-compatible server URL */
+export function normalizeOpenAiBaseUrl(url: string): string {
+  return url.trim().replace(/\/+$/, '').replace(/\/v1$/i, '')
 }
 
 export function getVllmApiKey(): string {
