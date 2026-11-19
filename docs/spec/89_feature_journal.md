@@ -91,3 +91,10 @@ Migration `0021_journal.sql` (and `articles.importance` from `0022_article_impor
 - Four figures: articles covered, sources cited, themes, minutes of reading (words of the written text at 200 per minute).
 - The essentials box, then one numbered section per theme: the synthesis with superscript citations that open the article; each cited source as a compact margin note (number, feed, date, title, icon buttons for more / less like this and archive in Clips) in a right-hand column level with the paragraph that cites it first, pushed down only as far as needed not to overlap the previous notes (`useMarginNotes()`), or right under the paragraph on narrow screens; one disclosure gathering the articles read but not cited, those past the limit and those judged negligible; and the theme instruction.
 - A footer recalling that the covered articles are marked read, and the unread count of the starred GitHub releases feeds left out.
+
+### Quality audit
+
+`npm run audit:journal [-- <edition id>] [--out report.md]` prints a Markdown report on one edition, the latest finished one by default. It only reads the database, so it runs while the server is up. Logic in `server/intelligence/journal-audit.ts`, queries in `journal-audit-db.ts`, CLI in `scripts/audit-journal.ts`.
+
+- **Important articles missing:** articles with importance ESSENTIAL, or in the top 10% by interest score, that no citation points to. Each one has a reason: judged SKIP, past the per-section cap, read but not cited, or kept out of the edition (filter rule, published too long before the period). Feeds the journal excludes on purpose (clips, starred releases) are not listed.
+- **Suspect citations:** the summary is cut at each run of citations. A citation is suspect when its passage names distinctive terms (capitalized words, words with digits; the first word of a sentence only with a digit or an inner capital) and the cited article's title, summary, excerpt and start of full text contain none of them. This is a heuristic: it finds a sentence attributed to the wrong article, not a wrong fact.
