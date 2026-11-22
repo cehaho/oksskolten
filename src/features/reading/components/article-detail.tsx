@@ -30,6 +30,7 @@ import { ArticleSummarySection } from './article-summary-section'
 import { ArticleTranslationBanner } from './article-translation-banner'
 import { ArticleContentBody } from './article-content-body'
 import { ArticleSimilarBanner } from './article-similar-banner'
+import { ArticleBlockedBanner } from './article-blocked-banner'
 import { ArticleComments } from './article-comments'
 import type { ArticleDetail as ArticleDetailData } from '../../../../shared/types'
 
@@ -261,6 +262,9 @@ export function ArticleDetail({ articleUrl, enableZapNavigation = false }: Artic
         summarizeError={summarizeError}
         metricsText={metrics.metrics && !translating ? metrics.formatMetrics() : null}
       />
+
+      {/* Site refused us: tell the reader instead of showing the block page as content */}
+      <ArticleBlockedBanner lastError={article.last_error} url={article.url} />
 
       {/* Similar articles */}
       {article.similar_count != null && article.similar_count > 0 && (

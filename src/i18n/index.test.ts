@@ -65,8 +65,8 @@ describe('message dictionary', () => {
     expect(sum).toBe(Object.keys(dict).length)
   })
 
-  it('contains 965 keys', () => {
-    expect(Object.keys(dict).length).toBe(965)
+  it('contains 967 keys', () => {
+    expect(Object.keys(dict).length).toBe(967)
   })
 
   it('has a non-empty French, English and Chinese text for every key', () => {

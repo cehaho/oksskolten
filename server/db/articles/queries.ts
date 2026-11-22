@@ -144,7 +144,7 @@ export function getArticleByUrl(url: string): ArticleDetail | undefined {
     SELECT a.id, a.feed_id, f.name AS feed_name, f.type AS feed_type,
            a.title, a.title_translated, a.url, a.published_at, a.lang, a.summary, a.excerpt, a.og_image,
            a.full_text, a.full_text_translated, a.translated_lang, a.seen_at, a.read_at, a.bookmarked_at, a.liked_at,
-           a.images_archived_at, a.videos_archived_at,
+           a.images_archived_at, a.videos_archived_at, a.last_error,
            (SELECT COUNT(*) FROM article_similarities WHERE article_id = a.id) AS similar_count
     FROM active_articles a
     JOIN feeds f ON a.feed_id = f.id
@@ -188,7 +188,7 @@ export function getArticleById(id: number): ArticleDetail | undefined {
     SELECT a.id, a.feed_id, f.name AS feed_name, f.type AS feed_type,
            a.title, a.title_translated, a.url, a.published_at, a.lang, a.summary, a.excerpt, a.og_image,
            a.full_text, a.full_text_translated, a.translated_lang, a.seen_at, a.read_at, a.bookmarked_at, a.liked_at,
-           a.images_archived_at, a.videos_archived_at, a.filtered_at, a.format, a.theme,
+           a.images_archived_at, a.videos_archived_at, a.filtered_at, a.format, a.theme, a.last_error,
            (SELECT COUNT(*) FROM article_similarities WHERE article_id = a.id) AS similar_count
     FROM active_articles a
     JOIN feeds f ON a.feed_id = f.id

@@ -444,6 +444,7 @@ describe('isBotBlockPage', () => {
     'Just a moment...',
     'Attention Required! | Cloudflare',
     'Access Denied - You do not have permission',
+    "You've been blocked by network security. If you think you've been blocked by mistake, file a ticket below and we'll look into it.",
   ])('detects bot-block pattern: %s', (text) => {
     expect(isBotBlockPage(text)).toBe(true)
   })
