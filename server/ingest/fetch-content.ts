@@ -1,5 +1,5 @@
 import { errorMessage } from '../fetcher/util.js'
-import { fetchFullText, isBotBlockPage, convertHtmlToMarkdown, markdownToExcerpt, ensureLeadImage, MIN_EXTRACTED_LENGTH } from '../fetcher/content.js'
+import { fetchFullText, isBotBlockPage, BlockedPageError, convertHtmlToMarkdown, markdownToExcerpt, ensureLeadImage, MIN_EXTRACTED_LENGTH } from '../fetcher/content.js'
 import { isGoogleNewsUrl } from '../fetcher/google-news.js'
 import { isDiscordMessageUrl } from '../feeds/sources/discord-channel.js'
 import { isGithubReleaseUrl } from '../feeds/sources/github-releases.js'
@@ -36,6 +36,7 @@ export async function fetchArticleContent(
   let lang: string | null = null
   let lastError: string | null = null
   let title: string | null = null
+  let blocked = false
 
   const existing = options?.existingArticle
 
@@ -70,7 +71,9 @@ export async function fetchArticleContent(
       excerpt = result.excerpt
       title = result.title
     } catch (err) {
-      lastError = `fetchFullText: ${errorMessage(err)}`
+      blocked = err instanceof BlockedPageError
+      // A block keeps its own message so the reader can be told about it
+      lastError = blocked ? errorMessage(err) : `fetchFullText: ${errorMessage(err)}`
     }
   }
 
@@ -93,7 +96,9 @@ export async function fetchArticleContent(
         log.info({ url, extractedLen, rssLen: mdLen }, 'using RSS feed content as fallback')
         fullText = md
         excerpt = markdownToExcerpt(md)
-        lastError = null
+        // A block stays recorded: the RSS excerpt is only a stand-in, and the
+        // reader must be told the site refused us.
+        if (!blocked) lastError = null
       }
     }
   }

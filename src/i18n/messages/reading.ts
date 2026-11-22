@@ -29,6 +29,8 @@ export const reading = {
   'article.translate': { ja: '翻訳', en: 'Translate', zh: '翻译'},
   'article.claudeCodeUsage': { ja: 'Claude Code の利用枠を消費', en: 'Consumed Claude Code usage', zh: '已消耗 Claude Code 用量'},
   'article.freeTier': { ja: '無料枠', en: 'Free tier', zh: '免费额度'},
+  'article.blockedBySite': { ja: 'このサイトは記事の代わりにボット対策ページを返しました。表示中の内容は不完全な可能性があり、取得は自動で再試行されます。', en: 'This site served a bot-protection page instead of the article. The content shown may be incomplete; fetching will be retried automatically.', zh: '该网站返回了反机器人页面而非文章内容。显示的内容可能不完整，系统将自动重试获取。'},
+  'article.blockedRedditHint': { ja: 'Reddit がサーバーの IP をブロックしています。REDDIT_CLIENT_ID と REDDIT_CLIENT_SECRET を設定すると公式 API が使われます。', en: 'Reddit is blocking your server\'s IP. Set REDDIT_CLIENT_ID and REDDIT_CLIENT_SECRET to use the official API.', zh: 'Reddit 正在屏蔽您服务器的 IP。设置 REDDIT_CLIENT_ID 和 REDDIT_CLIENT_SECRET 以使用官方 API。'},
   'article.notFound': { ja: '記事が見つかりませんでした', en: 'Article not found', zh: '文章未找到'},
   'article.rawMarkdown': { ja: 'マークダウン表示', en: 'Raw Markdown', zh: 'Markdown 原文'},
   'article.similarAlreadyRead': { ja: 'この記事は ${feedNames} にもあり、既に読んでいます', en: 'You already read this story from ${feedNames}', zh: '您已经从 ${feedNames} 读过这篇文章'},

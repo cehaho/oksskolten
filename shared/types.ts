@@ -106,4 +106,6 @@ export interface ArticleDetail extends ArticleListItem {
   videoArchivingEnabled: boolean
   /** Set when the feed's AI filter rejected the article; it stays hidden from lists */
   filtered_at?: string | null
+  /** Last content-fetch error; `blocked:` prefix when the site served a bot-protection page */
+  last_error?: string | null
 }

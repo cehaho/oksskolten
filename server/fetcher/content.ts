@@ -283,9 +283,26 @@ export async function fetchFullText(url: string, options?: FetchFullTextOptions)
       : new Error('Could not extract embedded article')
   }
 
+  // A bot-protection page is not an article. Returning it would store the
+  // block notice as the body and hide the failure from the reader; throwing
+  // records the error, keeps full_text empty and queues the article for retry.
+  if (result && isBotBlockPage(result.fullText)) {
+    throw new BlockedPageError(articleUrl)
+  }
   if (result) return result
   throw parseError instanceof Error ? parseError : new Error(String(parseError))
 }
+
+/** The site answered with a bot-protection / block page instead of the article. */
+export class BlockedPageError extends Error {
+  constructor(url: string) {
+    super(`${BLOCKED_ERROR_PREFIX} ${new URL(url).hostname} served a bot-protection page instead of the article`)
+    this.name = 'BlockedPageError'
+  }
+}
+
+/** Prefix of the stored last_error for blocked pages, matched by the UI. */
+export const BLOCKED_ERROR_PREFIX = 'blocked:'
 
 /** Trimmed length of extracted text — the measure every fallback is judged on. */
 function textLength(text: string): number {
@@ -401,6 +418,9 @@ export function isBotBlockPage(text: string): boolean {
     'just a moment',
     'attention required',
     'access denied',
+    // Reddit's IP-reputation block ("You've been blocked by network security")
+    'blocked by network security',
+    'file a ticket below',
   ]
   if (patterns.some(p => lower.includes(p))) return true
   // A cookie consent wall extracted in place of the article. Real articles can
