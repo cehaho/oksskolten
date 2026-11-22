@@ -797,3 +797,83 @@ describe('vLLM endpoints', () => {
   })
 })
 
+
+describe('Embeddings settings', () => {
+  function stubEmbeddingsServer(vectorSize: number) {
+    const fetchMock = vi.fn(async (url: string) => {
+      if (url.endsWith('/v1/models')) {
+        return new Response(JSON.stringify({ data: [{ id: 'chat' }, { id: 'bge-m3' }] }), { status: 200 })
+      }
+      return new Response(JSON.stringify({ data: [{ index: 0, embedding: Array(vectorSize).fill(0.1) }] }), { status: 200 })
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    return fetchMock
+  }
+
+  it('stores URL, model and dimensions, and returns them with the preferences', async () => {
+    const res = await app.inject({
+      method: 'PATCH', url: '/api/settings/preferences', headers: json,
+      payload: { 'embeddings.base_url': 'http://tei:8080/v1', 'embeddings.model': 'bge-m3', 'embeddings.dimensions': '1024' },
+    })
+    expect(res.statusCode).toBe(200)
+    const prefs = (await app.inject({ method: 'GET', url: '/api/settings/preferences' })).json()
+    expect(prefs).toMatchObject({ 'embeddings.base_url': 'http://tei:8080/v1', 'embeddings.model': 'bge-m3', 'embeddings.dimensions': '1024' })
+  })
+
+  it.each(['0', '-1', '1.5', 'abc', '100000'])('rejects dimensions %j', async (value) => {
+    const res = await app.inject({
+      method: 'PATCH', url: '/api/settings/preferences', headers: json,
+      payload: { 'embeddings.dimensions': value },
+    })
+    expect(res.statusCode).toBe(400)
+    expect(getSetting('embeddings.dimensions')).toBeUndefined()
+  })
+
+  it('stores its own API key', async () => {
+    const res = await app.inject({
+      method: 'POST', url: '/api/settings/api-keys/embeddings', headers: json,
+      payload: { apiKey: 'embed-key' },
+    })
+    expect(res.json()).toEqual({ ok: true, configured: true })
+    expect(getSetting('api_key.embeddings')).toBe('embed-key')
+  })
+
+  it('lists models from the OpenAI-compatible server when no URL of its own is set', async () => {
+    upsertSetting('vllm.base_url', 'http://llama-swap:8090')
+    upsertSetting('api_key.vllm', 'chat-key')
+    const fetchMock = stubEmbeddingsServer(1024)
+    const res = await app.inject({ method: 'GET', url: '/api/settings/embeddings/models' })
+    expect(res.json()).toEqual({ models: [{ name: 'chat' }, { name: 'bge-m3' }] })
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit]
+    expect(url).toBe('http://llama-swap:8090/v1/models')
+    expect((init.headers as Record<string, string>).Authorization).toBe('Bearer chat-key')
+  })
+
+  it('test reports EMBEDDINGS_NOT_CONFIGURED without a model, and makes no request', async () => {
+    const fetchMock = stubEmbeddingsServer(1024)
+    const res = await app.inject({ method: 'GET', url: '/api/settings/embeddings/status' })
+    expect(res.json()).toEqual({ ok: false, error: 'EMBEDDINGS_NOT_CONFIGURED' })
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('test returns the vector size received and the size expected', async () => {
+    upsertSetting('vllm.base_url', 'http://llama-swap:8090/v1')
+    upsertSetting('embeddings.model', 'bge-m3')
+    upsertSetting('embeddings.dimensions', '1024')
+    const fetchMock = stubEmbeddingsServer(768)
+    const body = (await app.inject({ method: 'GET', url: '/api/settings/embeddings/status' })).json()
+    expect(body).toMatchObject({ ok: true, dimensions: 768, expected: 1024 })
+    expect(typeof body.ms).toBe('number')
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit]
+    expect(url).toBe('http://llama-swap:8090/v1/embeddings')
+    expect(JSON.parse(init.body as string)).toMatchObject({ model: 'bge-m3' })
+  })
+
+  it('test reports an unreachable server instead of throwing', async () => {
+    upsertSetting('embeddings.model', 'bge-m3')
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('fetch failed')))
+    const res = await app.inject({ method: 'GET', url: '/api/settings/embeddings/status' })
+    expect(res.statusCode).toBe(200)
+    expect(res.json()).toEqual({ ok: false, error: 'fetch failed' })
+  })
+})

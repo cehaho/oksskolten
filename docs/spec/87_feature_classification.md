@@ -16,7 +16,7 @@ Formats and themes show up in the sidebar with their unread counts (`/formats/:i
 
 ## Scope
 
-- The vLLM provider settings only (base URL and API key): any OpenAI-compatible server that returns logprobs on `/v1/chat/completions` works (vLLM, llama.cpp `llama-server`). The model must be an instruct model, not a thinking one.
+- The OpenAI-compatible provider settings only (internal id `vllm`; base URL and API key): any OpenAI-compatible server that returns logprobs on `/v1/chat/completions` works (vLLM, llama-swap, llama.cpp `llama-server`). The base URL may be entered with or without `/v1`: `getVllmBaseUrl()` strips a trailing slash and `/v1`, and every caller appends the OpenAI path itself. The model must be an instruct model, not a thinking one.
 - One format and one theme per article. Multi-label tagging is out of scope.
 - Feed categories stay in the database, the OPML export and Settings → Feeds. With `classify.hide_categories` on (the default once classification is enabled), the reading UI shows themes where it showed categories; turning it off brings the folders back unchanged.
 
@@ -38,7 +38,7 @@ Formats and themes show up in the sidebar with their unread counts (`/formats/:i
 | `classify.theme_theta` | `0.3` | Minimum margin for a theme (themes like AI / Computing overlap, and the top guess is usually right) |
 | `classify.hide_categories` | `on` | Show themes instead of categories in the sidebar and the tab bar |
 
-**Importance** is asked last, because its question carries the reader's journal instruction for the theme just decided and the titles of their 5 latest "more like this" / "less like this" votes on it ([92_feature_journal.md](./92_feature_journal.md)). Options are `ESSENTIAL`, `USEFUL` and `SKIP` (`IMPORTANCE` in `shared/classification.ts`), with a fixed theta of 0.3. Undecided stays `null`, which the journal reads as useful: a hesitating model never hides an article. Articles classified before importance existed keep `null` until a backfill with `all`.
+**Importance** is asked last, because its question carries the reader's journal instruction for the theme just decided and the titles of their 5 latest "more like this" / "less like this" votes on it ([89_feature_journal.md](./89_feature_journal.md)). Options are `ESSENTIAL`, `USEFUL` and `SKIP` (`IMPORTANCE` in `shared/classification.ts`), with a fixed theta of 0.3. Undecided stays `null`, which the journal reads as useful: a hesitating model never hides an article. Articles classified before importance existed keep `null` until a backfill with `all`.
 
 Server errors throw, so the queue retries. If neither question saw an option letter (`degraded`: no logprobs, or the model answered outside the menu) the call counts as a failure, not as "undecided".
 
@@ -74,9 +74,14 @@ When themes get too broad, Settings → Classification → "Suggest themes" asks
 Settings → Classification → Accuracy bench (or `npm run bench:notjev`) measures how right the three decisions are on the reader's own articles. It never writes to the production database: a child process copies it with `VACUUM INTO` into `data/notjev-bench-<ISO>/snapshot.db`, points its own `DATABASE_URL` at the copy, and only then imports the production modules, so the prompts are byte for byte those of `classifyArticle()`.
 
 - Sample: articles carrying a label first (journal vote, liked, bookmarked), then a seeded random draw among classified articles. Articles whose title is injected as an example in the importance question are left out.
-- Three readings per article: production; the same questions with options permuted (position bias); and a reference from the same model with thinking on, whose final `Answer: X` letter is parsed (unreadable answers are counted as such).
+- Three readings per article: production; the same questions with options permuted (position bias); and a reference from the same model with thinking on, whose final `Answer: X` letter is parsed (unreadable answers are counted as such). Plus two importance rotations (below).
 - Results are appended to `results.jsonl` as they come, so a stopped run resumes without repeating calls; `replay.json` is a `notjev replay` recording.
 - `report.html` is self-contained: agreement against a null arm, importance accuracy against labels (strict and soft), confusion matrices, theta curve recomputed offline, accuracy by band, position bias, coverage, time, reproducibility against stored values, and the list of disagreements with buttons. Arbitrations are exported as JSON and imported back, which recomputes the figures without any call.
+
+- Importance by rotations (`rotations`, on by default): the importance question is also asked with its options rotated twice; the three distributions are read back onto the option ids, averaged, and the production margin rule (theta 0.3) is applied. Measured against the production reading only; `classify.ts` is unchanged.
+- Blind importance labeling: the report's `#labeling` view shows 60 articles drawn with the run's seed, 15 per production verdict (ESSENTIAL, USEFUL, SKIP, undecided), in a shuffled order and without any answer, with the text sent to the model and four buttons (ESSENTIAL, USEFUL, SKIP, I don't know). Labels are exported as JSON and re-injected with `labelsFile`, without any call. Accuracy against them is weighted by stratum size, with abstention (plus coverage) and as in production (undecided = USEFUL).
+- Importance reproducibility diagnosis: each article whose importance re-read differs from `articles.importance`, with the shuffled and rotation readings and whether the stored theme's journal instruction or votes changed after `classified_at`.
+- Guarantees: routes in the authenticated API scope; one run at a time through a lock file taken by `run.ts` (covers the command line too); the production database only opened read-only for `VACUUM INTO`.
 
 Configuration: `scripts/notjev-bench.config.json`; usage: `scripts/README-notjev-bench.md`.
 

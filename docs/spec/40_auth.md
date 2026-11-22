@@ -133,13 +133,13 @@ Generic OIDC login (`server/auth/oidc-routes.ts`), designed for self-hosted iden
 6. Provider → redirects to GET /api/oauth/oidc/callback?code=xxx&state=yyy
 7. Server: validates state → exchanges code (with PKCE verifier) at the token endpoint
 8. Server: fetches the userinfo endpoint with the access token
-9. Server: matches email (unless email_verified is false), preferred_username or sub against the allow list
+9. Server: if an allow list is set, matches email (unless email_verified is false), preferred_username or sub against it
 10. Server: issues JWT → one-time exchange code → redirects to /?oauth_code=<exchange_code>
 11. AuthGate: exchanges the code via POST /api/oauth/github/token (shared by all external providers)
 ```
 
 Security considerations:
-- The allow list is mandatory: OIDC cannot be enabled without at least one allowed identity, since a provider may admit users other than the owner
+- The allow list is optional. When empty, every user the provider authenticates is admitted, so access must be restricted on the provider side (Pocket ID: Allowed User Groups on the OIDC client)
 - PKCE (S256) plus single-use state; works with confidential clients (client secret) and public clients (no secret)
 - Identity comes from the userinfo endpoint over a direct server-to-server TLS call, so the ID token is not parsed
 - An email the provider marks as unverified is ignored for matching
@@ -185,7 +185,7 @@ Invariant: **at least one authentication method is always enabled**
 | Disable GitHub OAuth | Password authentication enabled OR Passkey > 0 OR OIDC enabled |
 | Disable OIDC | Password authentication enabled OR Passkey > 0 OR GitHub OAuth enabled |
 | Clear GitHub OAuth settings (when it is the only auth method) | Blocked |
-| Clear OIDC issuer, client ID or allow list (when it is the only auth method) | Blocked |
+| Clear OIDC issuer or client ID (when it is the only auth method) | Blocked |
 
 The check is centralized in `hasOtherLoginMethod()` (`server/auth/sso.ts`).
 

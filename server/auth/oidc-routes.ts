@@ -13,7 +13,9 @@ export { isOidcEnabled }
 /**
  * Generic OpenID Connect login (Pocket ID, Authelia, Authentik, Keycloak, ...).
  * Endpoints are read from the issuer's discovery document; the user is
- * identified through the userinfo endpoint and matched against an allow list.
+ * identified through the userinfo endpoint and, when an allow list is set,
+ * matched against it. With an empty allow list, access control is delegated to
+ * the provider (e.g. Pocket ID's allowed user groups on the client).
  * The callback ends with the same one-time exchange code as GitHub OAuth.
  */
 
@@ -181,16 +183,18 @@ export async function oidcRoutes(app: FastifyInstance): Promise<void> {
       if (!userRes.ok) return reply.redirect('/?oauth_error=userinfo_error')
       const info = UserInfo.parse(await userRes.json())
 
-      // Match against the allow list: email (unless explicitly unverified),
-      // preferred_username, or sub
-      const identities = [
-        info.email_verified === false ? undefined : info.email,
-        info.preferred_username,
-        info.sub,
-      ].filter((v): v is string => !!v).map(v => v.toLowerCase())
+      // Optional allow list: email (unless explicitly unverified),
+      // preferred_username, or sub. Empty = trust the provider's access control.
       const allowed = getOidcAllowedUsers()
-      if (!identities.some(id => allowed.includes(id))) {
-        return reply.redirect('/?oauth_error=unauthorized')
+      if (allowed.length > 0) {
+        const identities = [
+          info.email_verified === false ? undefined : info.email,
+          info.preferred_username,
+          info.sub,
+        ].filter((v): v is string => !!v).map(v => v.toLowerCase())
+        if (!identities.some(id => allowed.includes(id))) {
+          return reply.redirect('/?oauth_error=unauthorized')
+        }
       }
 
       const user = getDb().prepare('SELECT email, token_version FROM users LIMIT 1').get() as
@@ -229,11 +233,8 @@ export async function oidcRoutes(app: FastifyInstance): Promise<void> {
     // Lockout prevention: when OIDC is the only login method, refuse changes
     // that would leave it unconfigured
     if (isOidcEnabled() && !hasOtherLoginMethod('oidc')) {
-      const clearsAllowList = body.allowedUsers !== undefined
-        && body.allowedUsers.split(',').every(u => !u.trim())
       if ((issuer !== undefined && !issuer)
-        || (body.clientId !== undefined && !body.clientId.trim())
-        || clearsAllowList) {
+        || (body.clientId !== undefined && !body.clientId.trim())) {
         return reply.status(400).send({ error: 'Cannot clear OIDC settings when OIDC is the only login method' })
       }
     }
@@ -259,7 +260,7 @@ export async function oidcRoutes(app: FastifyInstance): Promise<void> {
 
     if (body.enabled) {
       if (!isOidcConfigured()) {
-        return reply.status(400).send({ error: 'OIDC is not configured (issuer, client ID and allowed users are required)' })
+        return reply.status(400).send({ error: 'OIDC is not configured (issuer and client ID are required)' })
       }
     } else if (!hasOtherLoginMethod('oidc')) {
       return reply.status(400).send({ error: 'Cannot disable OIDC without an alternative login method' })

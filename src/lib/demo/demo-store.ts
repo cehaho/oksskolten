@@ -1,7 +1,6 @@
 import seedFeeds from './seed/feeds.json'
 import seedArticles from './seed/articles.json'
 import seedConversationsEn from './seed/en/conversations.json'
-import seedConversationsJa from './seed/ja/conversations.json'
 import { getLocale, dt } from './i18n'
 import type { FeedWithCounts, ArticleListItem, ArticleDetail, Category } from '../../../shared/types'
 
@@ -9,7 +8,6 @@ type DemoLocale = ReturnType<typeof getLocale>
 
 const conversationsByLocale: Partial<Record<DemoLocale, SeedConversation[]>> = {
   en: seedConversationsEn as SeedConversation[],
-  ja: seedConversationsJa as SeedConversation[],
 }
 
 /**
@@ -125,7 +123,7 @@ interface SeedConversation {
 }
 
 function articleSummary(a: SeedArticle): string | null {
-  return (getLocale() === 'ja' ? a.summary_ja : a.summary) ?? a.summary ?? null
+  return a.summary ?? null
 }
 
 function feedName(feedId: number): string {

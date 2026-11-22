@@ -103,9 +103,9 @@ describe('isOidcEnabled', () => {
     expect(isOidcEnabled()).toBe(false)
   })
 
-  it('is false without allowed users', () => {
+  it('is true without allowed users (provider controls access)', () => {
     enableOidc('')
-    expect(isOidcEnabled()).toBe(false)
+    expect(isOidcEnabled()).toBe(true)
   })
 
   it('is true when configured and enabled', () => {
@@ -181,6 +181,16 @@ describe('GET /api/oauth/oidc/callback', () => {
   it('matches on preferred_username or sub', async () => {
     seedUser()
     enableOidc('abc-123')
+    mockProvider()
+    const state = await startLogin()
+    const res = await app.inject({ method: 'GET', url: `/api/oauth/oidc/callback?code=c&state=${state}` })
+    expect(res.headers.location).toMatch(/^\/\?oauth_code=/)
+  })
+
+  it('accepts any provider-authenticated user when the allow list is empty', async () => {
+    seedUser()
+    enableOidc('')
+    userinfo = { sub: 'someone', email: 'other@example.com' }
     mockProvider()
     const state = await startLogin()
     const res = await app.inject({ method: 'GET', url: `/api/oauth/oidc/callback?code=c&state=${state}` })
@@ -266,15 +276,26 @@ describe('OIDC config and toggle', () => {
     expect(res.statusCode).toBe(400)
   })
 
-  it('prevents clearing the allow list when it is the only login method', async () => {
+  it('prevents clearing the client ID when it is the only login method', async () => {
     seedUser()
     enableOidc()
     upsertSetting('auth.password_enabled', '0')
     const res = await app.inject({
       method: 'POST', url: '/api/oauth/oidc/config', headers: { ...json, ...authHeader() },
-      payload: { allowedUsers: ' , ' },
+      payload: { clientId: ' ' },
     })
     expect(res.statusCode).toBe(400)
+  })
+
+  it('allows clearing the allow list when it is the only login method', async () => {
+    seedUser()
+    enableOidc()
+    upsertSetting('auth.password_enabled', '0')
+    const res = await app.inject({
+      method: 'POST', url: '/api/oauth/oidc/config', headers: { ...json, ...authHeader() },
+      payload: { allowedUsers: '' },
+    })
+    expect(res.statusCode).toBe(200)
   })
 
   it('counts as an alternative when disabling password auth', async () => {

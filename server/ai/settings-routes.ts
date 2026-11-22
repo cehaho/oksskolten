@@ -4,6 +4,7 @@ import { getSetting, upsertSetting, deleteSetting } from '../db.js'
 import { requireJson } from '../auth/index.js'
 import { getMonthlyUsage } from './providers/translate/google-translate.js'
 import { getDeeplMonthlyUsage } from './providers/translate/deepl.js'
+import { embed, fetchEmbeddingsServer, getEmbeddingsConfig } from './providers/embeddings.js'
 
 const ProviderParams = z.object({ provider: z.string() })
 const ApiKeyBody = z.object({ apiKey: z.string().optional() })
@@ -16,6 +17,7 @@ export async function aiSettingsRoutes(api: FastifyInstance): Promise<void> {
     gemini: 'api_key.gemini',
     openai: 'api_key.openai',
     vllm: 'api_key.vllm',
+    embeddings: 'api_key.embeddings',
     'google-translate': 'api_key.google_translate',
     deepl: 'api_key.deepl',
     github: 'github.token',
@@ -115,7 +117,7 @@ export async function aiSettingsRoutes(api: FastifyInstance): Promise<void> {
 
   async function vllmFetch(path: string): Promise<Response> {
     const { getVllmBaseUrl, getVllmApiKey } = await import('./providers/llm/vllm.js')
-    const baseUrl = getVllmBaseUrl().replace(/\/+$/, '')
+    const baseUrl = getVllmBaseUrl()
     const apiKey = getVllmApiKey()
     const headers: Record<string, string> = {}
     if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`
@@ -154,6 +156,38 @@ export async function aiSettingsRoutes(api: FastifyInstance): Promise<void> {
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Connection failed'
       reply.send({ ok: false, error: message })
+    }
+  })
+
+  // --- Embeddings endpoints ---
+
+  api.get('/api/settings/embeddings/models', async (_request, reply) => {
+    try {
+      const res = await fetchEmbeddingsServer('/v1/models')
+      if (!res.ok) {
+        reply.send({ models: [] })
+        return
+      }
+      const data = await res.json() as { data?: Array<{ id: string }> }
+      reply.send({ models: (data.data || []).map(m => ({ name: m.id })) })
+    } catch {
+      reply.send({ models: [] })
+    }
+  })
+
+  /** Embed one short text with the saved settings: reachability, vector size and latency */
+  api.get('/api/settings/embeddings/status', async (_request, reply) => {
+    const config = getEmbeddingsConfig()
+    if (!config) {
+      reply.send({ ok: false, error: 'EMBEDDINGS_NOT_CONFIGURED' })
+      return
+    }
+    const started = Date.now()
+    try {
+      const [vector] = await embed(['Oksskolten embedding connection test'], config)
+      reply.send({ ok: true, dimensions: vector.length, expected: config.dimensions, ms: Date.now() - started })
+    } catch (err: unknown) {
+      reply.send({ ok: false, error: err instanceof Error ? err.message : 'Connection failed' })
     }
   })
 }

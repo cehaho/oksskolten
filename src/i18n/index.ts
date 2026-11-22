@@ -1,7 +1,18 @@
 import { createContext, useContext } from 'react'
 import { dict } from './messages/index.js'
 
-export type Locale = 'ja' | 'en' | 'zh'
+export const LOCALES = ['fr', 'en', 'zh'] as const
+export type Locale = typeof LOCALES[number]
+
+export function isLocale(value: unknown): value is Locale {
+  return typeof value === 'string' && (LOCALES as readonly string[]).includes(value)
+}
+
+/** The browser's language when it is one of ours, English otherwise */
+export function browserLocale(): Locale {
+  const lang = navigator.language.toLowerCase()
+  return LOCALES.find(l => lang.startsWith(l)) ?? 'en'
+}
 
 export { APP_NAME } from './app-name.js'
 
@@ -22,12 +33,11 @@ interface LocaleContextValue {
   setLocale: (locale: Locale) => void
 }
 
-const defaultLocale: Locale = navigator.language.startsWith('ja') ? 'ja' : navigator.language.startsWith('zh') ? 'zh' : 'en'
+const defaultLocale: Locale = browserLocale()
 
 function resolveLocale(): Locale {
   const stored = localStorage.getItem('locale')
-  if (stored === 'ja' || stored === 'en' || stored === 'zh') return stored
-  return defaultLocale
+  return isLocale(stored) ? stored : defaultLocale
 }
 
 /** Translate outside React tree (resolves locale from localStorage) */

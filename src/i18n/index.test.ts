@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { createElement } from 'react'
-import { LocaleContext, useI18n } from '@/i18n'
+import { LocaleContext, useI18n, isLocale, type Locale } from '@/i18n'
 import { dict } from './messages/index.js'
 import { auth } from './messages/auth.js'
 import { chat } from './messages/chat.js'
@@ -12,16 +12,16 @@ import { reading } from './messages/reading.js'
 import { settings } from './messages/settings.js'
 import { journal } from './messages/journal.js'
 
-function makeWrapper(locale: 'ja' | 'en') {
+function makeWrapper(locale: Locale) {
   return ({ children }: { children: React.ReactNode }) =>
     createElement(LocaleContext.Provider, { value: { locale, setLocale: () => {} } }, children)
 }
 
 describe('useI18n', () => {
-  it('returns Japanese text when locale is ja', () => {
-    const { result } = renderHook(() => useI18n(), { wrapper: makeWrapper('ja') })
-    expect(result.current.t('feeds.inbox')).toBe('Inbox')
-    expect(result.current.t('feeds.title')).toBe('フィード')
+  it('returns French text when locale is fr', () => {
+    const { result } = renderHook(() => useI18n(), { wrapper: makeWrapper('fr') })
+    expect(result.current.t('feeds.inbox')).toBe('Boîte de réception')
+    expect(result.current.t('feeds.title')).toBe('Flux')
   })
 
   it('returns English text when locale is en', () => {
@@ -36,16 +36,25 @@ describe('useI18n', () => {
     expect(text).not.toContain('${name}')
   })
 
-  it('replaces parameters in Japanese text', () => {
-    const { result } = renderHook(() => useI18n(), { wrapper: makeWrapper('ja') })
-    const text = result.current.t('feeds.deleteConfirm', { name: 'テスト' })
-    expect(text).toContain('テスト')
+  it('replaces parameters in French text', () => {
+    const { result } = renderHook(() => useI18n(), { wrapper: makeWrapper('fr') })
+    const text = result.current.t('feeds.deleteConfirm', { name: 'Flux de test' })
+    expect(text).toContain('Flux de test')
     expect(text).not.toContain('${name}')
   })
 
   it('exposes locale value', () => {
-    const { result } = renderHook(() => useI18n(), { wrapper: makeWrapper('ja') })
-    expect(result.current.locale).toBe('ja')
+    const { result } = renderHook(() => useI18n(), { wrapper: makeWrapper('fr') })
+    expect(result.current.locale).toBe('fr')
+  })
+})
+
+describe('isLocale', () => {
+  it('accepts the offered locales only', () => {
+    expect(['fr', 'en', 'zh'].every(isLocale)).toBe(true)
+    // Japanese was dropped: a stored 'ja' must fall back instead of being used
+    expect(isLocale('ja')).toBe(false)
+    expect(isLocale(null)).toBe(false)
   })
 })
 
@@ -56,7 +65,14 @@ describe('message dictionary', () => {
     expect(sum).toBe(Object.keys(dict).length)
   })
 
-  it('contains 950 keys', () => {
-    expect(Object.keys(dict).length).toBe(950)
+  it('contains 967 keys', () => {
+    expect(Object.keys(dict).length).toBe(967)
+  })
+
+  it('has a non-empty French, English and Chinese text for every key', () => {
+    const missing = Object.entries(dict)
+      .filter(([, v]) => ![v.fr, v.en, v.zh].every(s => typeof s === 'string' && s.length > 0))
+      .map(([k]) => k)
+    expect(missing).toEqual([])
   })
 })

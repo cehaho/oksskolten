@@ -48,7 +48,7 @@ A reading preference (`reading.simple_mode`, Settings → Reading, on by default
 | Section bar above lists | — | the whole bar (themes are in the sidebar) |
 
 - **GitHub Releases**: each enabled starred-releases feed (`rss_url` `https://github.com/stars/<user>`, whatever form of the URL was pasted, see [86](./86_feature_github_releases.md)) gets its own sidebar entry with its unread count, since the feed list that would otherwise show it is hidden.
-- **Home page**: `/` redirects to `/journal` ([92](./92_feature_journal.md)) instead of showing the front page.
+- **Home page**: `/` redirects to `/journal` ([89](./89_feature_journal.md)) instead of showing the front page.
 - **Feed list fallback**: the feed list is hidden only while article classification is on. Without themes the sidebar would offer nothing to read, so the feed list stays.
 
 ### Command Palette & Keyboard Shortcuts
@@ -69,7 +69,9 @@ Command palette groups:
 - **Feeds** — Dynamic list from SWR, shown only when search input is non-empty (clip feeds excluded)
 - **Appearance** — Theme, layout, and color mode switching
 
-All items include English `keywords` for cross-language matching (e.g., typing "chat" matches the localized label in Japanese locale).
+All items include English `keywords` for cross-language matching (e.g., typing "chat" matches the localized label in French locale).
+
+The interface is offered in French, English and Chinese (`LOCALES` in `src/i18n/index.ts`). The locale comes from `?lang=`, then the stored choice, then the profile language, then the browser language, English otherwise; a stored locale that is no longer offered (Japanese was dropped) falls back the same way. Every dictionary entry must carry all three texts, which the type check enforces.
 
 Global shortcuts are managed by `useGlobalShortcuts` hook in `src/hooks/use-global-shortcuts.ts` and registered in `FeedList`.
 

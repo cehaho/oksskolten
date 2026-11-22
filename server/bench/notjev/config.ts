@@ -30,6 +30,12 @@ export interface BenchConfig {
   runDir: string
   /** Arbitrations exported from a report; set = recompute the report, no calls */
   arbitrationsFile: string
+  /** Blind importance labels exported from the report's labeling page; set = recompute the report, no calls */
+  labelsFile: string
+  /** Ask the importance question in its 3 option rotations (2 extra calls per article) */
+  rotations: boolean
+  /** Articles on the labeling page, and the quota per verdict stratum */
+  labeling: { size: number; perStratum: number }
   /** Recording in the `notjev replay` format, relative to the run folder */
   replayFile: string
   /** Theta values of the coverage / agreement curve */
@@ -53,6 +59,9 @@ export const DEFAULT_CONFIG: BenchConfig = {
   outputDir: '',
   runDir: '',
   arbitrationsFile: '',
+  labelsFile: '',
+  rotations: true,
+  labeling: { size: 60, perStratum: 15 },
   replayFile: 'replay.json',
   thetas: [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9],
   reasoning: {
@@ -84,11 +93,13 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): BenchConfig {
     ...DEFAULT_CONFIG,
     ...file,
     reasoning: { ...DEFAULT_CONFIG.reasoning, ...(file.reasoning ?? {}) },
+    labeling: { ...DEFAULT_CONFIG.labeling, ...(file.labeling ?? {}) },
   }
   // Overrides set by the settings UI when it starts a run
   if (env.NOTJEV_BENCH_RUN_DIR) cfg.runDir = env.NOTJEV_BENCH_RUN_DIR
   if (env.NOTJEV_BENCH_TRIAL) cfg.trial = env.NOTJEV_BENCH_TRIAL === '1'
   if (env.NOTJEV_BENCH_ARBITRATIONS) cfg.arbitrationsFile = env.NOTJEV_BENCH_ARBITRATIONS
+  if (env.NOTJEV_BENCH_LABELS) cfg.labelsFile = env.NOTJEV_BENCH_LABELS
   cfg.concurrency = Math.max(1, Math.floor(cfg.concurrency))
   return cfg
 }
@@ -109,6 +120,10 @@ export function resolveArbitrations(cfg: BenchConfig): string | null {
   return cfg.arbitrationsFile ? resolveFrom(PROJECT_ROOT, cfg.arbitrationsFile) : null
 }
 
+export function resolveLabels(cfg: BenchConfig): string | null {
+  return cfg.labelsFile ? resolveFrom(PROJECT_ROOT, cfg.labelsFile) : null
+}
+
 /** File names inside a run folder */
 export const FILES = {
   snapshot: 'snapshot.db',
@@ -117,5 +132,6 @@ export const FILES = {
   progress: 'progress.json',
   report: 'report.html',
   arbitrations: 'arbitrations.json',
+  labels: 'labels.json',
   log: 'bench.log',
 } as const

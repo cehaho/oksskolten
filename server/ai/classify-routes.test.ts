@@ -112,6 +112,19 @@ describe('classification API', () => {
     expect(JSON.parse(init.body)).toMatchObject({ model: 'test-model', max_tokens: 1, logprobs: true })
   })
 
+  it('sends classification to a server URL entered with /v1 without doubling it', async () => {
+    await enable()
+    const prefs = await app.inject({
+      method: 'PATCH', url: '/api/settings/preferences', headers: json,
+      payload: { 'vllm.base_url': 'http://llama-swap:8090/v1' },
+    })
+    expect(prefs.statusCode).toBe(200)
+    const fetchMock = stubLogprobServer('B')
+    await app.inject({ method: 'POST', url: '/api/classification/test', headers: json, payload: { title: 'A new album' } })
+    const [url] = fetchMock.mock.calls[0] as unknown as [string]
+    expect(url).toBe('http://llama-swap:8090/v1/chat/completions')
+  })
+
   it('asks the importance question with the reader instruction for the theme found', async () => {
     await enable()
     await app.inject({ method: 'PUT', url: '/api/journal/instructions/COMICS', headers: json, payload: { instruction: 'Skip reprint announcements' } })

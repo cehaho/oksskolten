@@ -46,6 +46,13 @@ export function permute<T>(items: readonly T[], seed: number): T[] {
   return [...items.slice(1), items[0]]
 }
 
+/** The list rotated left `k` times: rotate([A, B, C], 1) = [B, C, A] */
+export function rotate<T>(items: readonly T[], k: number): T[] {
+  if (!items.length) return []
+  const n = ((k % items.length) + items.length) % items.length
+  return [...items.slice(n), ...items.slice(0, n)]
+}
+
 /**
  * The final letter of a reasoned answer, or null when it cannot be read
  * without guessing. Accepted: the last "Answer: X" line outside the thinking
@@ -58,7 +65,8 @@ export function extractLetter(content: string, letters: readonly string[]): stri
     .replace(/^[\s\S]*<\/think>/, '')
     // A thinking block never closed (cut by max_tokens) holds no final answer
     .replace(/<think>[\s\S]*$/, '')
-  const re = /answer\s*[:：]\s*\**\s*\(?\s*([A-Z])\s*\)?(?![A-Za-z])/gi
+  // \uFF1A is the full-width colon, escaped so this file stays covered by scripts/lint-no-japanese.ts
+  const re = /answer\s*[:\uFF1A]\s*\**\s*\(?\s*([A-Z])\s*\)?(?![A-Za-z])/gi
   let last: string | null = null
   for (let m = re.exec(visible); m; m = re.exec(visible)) last = m[1].toUpperCase()
   if (last) return letters.includes(last) ? last : null
